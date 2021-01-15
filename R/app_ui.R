@@ -4,13 +4,59 @@
 #'     DO NOT REMOVE.
 #' @import shiny
 #' @noRd
+#' 
+
+# TODO: work out how to import the data properly - it's currently in inst and loaded
+# automatically, then called in the ui and server separately.
+
 app_ui <- function(request) {
+  
+  #meta_sum <- 1:2
+  metadata <- metaFem
+  meta_sum <- get_condition_summary(metadata)
+  
   tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),
     # List the first level UI elements here 
     fluidPage(
-      h1("spex")
+      h1("spex"),
+      titlePanel("Dataset title"),
+      
+      tabsetPanel(
+        tabPanel("metadata",
+                 br(),
+                 sidebarLayout(
+                   sidebarPanel(width = 3,
+                                checkboxInput("show_meta", "show all metadata", value = TRUE),
+                                checkboxInput("show_meta_summary", "show metadata summary"),
+                                conditionalPanel(condition = "input.show_meta_summary == 1",
+                                                 selectInput("selected_condition", 
+                                                             "select condition",
+                                                             #choices = meta_sum)
+                                                             choices = names(meta_sum))
+                                )
+                   ),
+                   mainPanel(width = 9,
+                             conditionalPanel(condition = "input.show_meta_summary == 1",
+                                              tableOutput("meta_summary")),
+                             
+                             conditionalPanel(condition = "input.show_meta == 1", 
+                                              DT::dataTableOutput("meta_table"))
+                   )
+                 )
+        ),
+        tabPanel("data",
+                 DT::dataTableOutput("data_table")),
+        tabPanel("plot",
+                 navlistPanel("plot type", 
+                              tabPanel("histogram", 
+                                       mod_histogramUI("hist")),
+                              tabPanel("scatterplot",
+                                       mod_scatterplot_ui("scatter")),
+                              widths = c(3,9))
+        )
+      )
     )
   )
 }

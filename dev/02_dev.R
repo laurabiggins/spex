@@ -50,9 +50,9 @@ devtools::build_vignettes()
 
 ## Code coverage ----
 ## (You'll need GitHub there)
-usethis::use_github()
-usethis::use_travis()
-usethis::use_appveyor()
+#usethis::use_github()
+#usethis::use_travis()
+#usethis::use_appveyor()
 
 # You're now set! ----
 # go to dev/03_deploy.R
