@@ -1,0 +1,13 @@
+Package: spex
+Title: spex data exploration
+Version: 0.0.0.9000
+Authors@R: person('Laura', 'Biggins', email = 'laura.biggins@babraham.ac.uk', role = c('cre', 'aut'))
+Description: Exploration of data sets.
+License: GPL (>= 3)
+Imports: 
+    config,
+    golem,
+    shiny
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.1
