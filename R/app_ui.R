@@ -11,16 +11,16 @@
 
 app_ui <- function(request) {
   
-  #meta_sum <- 1:2
-  metadata <- metaFem
-  meta_sum <- get_condition_summary(metadata)
+  #metadata <- golem::get_golem_options("metadata")
+
+  meta_sum <- get_condition_summary(golem::get_golem_options("metadata"))
   
   tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),
     # List the first level UI elements here 
     fluidPage(
-      h1("spex"),
+      
       titlePanel("Dataset title"),
       
       tabsetPanel(
@@ -29,13 +29,14 @@ app_ui <- function(request) {
                  sidebarLayout(
                    sidebarPanel(width = 3,
                                 checkboxInput("show_meta", "show all metadata", value = TRUE),
-                                checkboxInput("show_meta_summary", "show metadata summary"),
-                                conditionalPanel(condition = "input.show_meta_summary == 1",
-                                                 selectInput("selected_condition", 
-                                                             "select condition",
-                                                             #choices = meta_sum)
-                                                             choices = names(meta_sum))
-                                )
+                                # checkboxInput("show_meta_summary", "show metadata summary"),
+                                # conditionalPanel(condition = "input.show_meta_summary == 1",
+                                #                  selectInput("selected_condition", 
+                                #                              "select condition",
+                                #                              #choices = meta_sum)
+                                #                              choices = names(meta_sum)),
+                                # ),
+                                actionButton("browser", "browser")
                    ),
                    mainPanel(width = 9,
                              conditionalPanel(condition = "input.show_meta_summary == 1",
@@ -72,7 +73,7 @@ app_ui <- function(request) {
 golem_add_external_resources <- function(){
   
   add_resource_path(
-    'www', app_sys('app/www')
+    'www', app_sys('app/www')#, package = "spex")
   )
  
   tags$head(
