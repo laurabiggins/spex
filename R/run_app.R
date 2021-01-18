@@ -15,7 +15,8 @@ run_app <- function(
       server = app_server
     ), 
     golem_opts = list(metadata = readRDS("inst/metaFem.rds"),
-                      dataset  = readRDS("inst/femExpression.rds"))
+                      dataset  = readRDS("inst/femExpression.rds"),
+                      sample_names = "condName")
   )
 }
 

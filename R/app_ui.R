@@ -11,9 +11,9 @@
 
 app_ui <- function(request) {
   
-  #metadata <- golem::get_golem_options("metadata")
-
-  meta_sum <- get_condition_summary(golem::get_golem_options("metadata"))
+  metadata <- golem::get_golem_options("metadata")
+  meta_sum <- get_condition_summary(metadata)
+  samples <- get_all_sample_names(metadata)
   
   tagList(
     # Leave this function for adding external resources
@@ -48,13 +48,14 @@ app_ui <- function(request) {
                  )
         ),
         tabPanel("data",
+                 br(),
                  DT::dataTableOutput("data_table")),
         tabPanel("plot",
-                 navlistPanel("plot type", 
+                 navlistPanel("plot type",
+                              tabPanel("scatterplot",
+                                       mod_scatterplot_ui("scatter", samples)),
                               tabPanel("histogram", 
                                        mod_histogramUI("hist")),
-                              tabPanel("scatterplot",
-                                       mod_scatterplot_ui("scatter")),
                               widths = c(3,9))
         )
       )

@@ -15,7 +15,8 @@ dt_setup(
   regex = FALSE,
   selection = "single",
   table_lengths = c(10, 20, 50, 100),
-  filter_pos = "none"
+  filter_pos = "none",
+  show_rownames = FALSE
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ cols_to_round to default: 3}
 This will only show if dom_opt includes "l"}
 
 \item{filter_pos}{One of c("none", "bottom", "top"), where to place column filters. Default: "none"}
+
+\item{show_rownames}{boolean whether to show rownames or not. Default: FALSE}
 }
 \value{
 DT::datatable() object

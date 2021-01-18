@@ -19,6 +19,7 @@
 #' @param table_lengths integer vector of available table lengths. Default: c(10,20,50,100).
 #' This will only show if dom_opt includes "l"
 #' @param filter_pos One of c("none", "bottom", "top"), where to place column filters. Default: "none"
+#'@param show_rownames boolean whether to show rownames or not. Default: FALSE
 #'
 #' @return DT::datatable() object
 #' @export
@@ -28,9 +29,10 @@
 dt_setup <-  function(data, n_rows = 10, lineHeight="80%", dom_opt = "tip", 
                       cols_to_round = NULL, dt_options = NULL, sig_digits = 3, 
                       regex = FALSE, selection = "single", 
-                      table_lengths = c(10,20,50,100), filter_pos = "none") {
+                      table_lengths = c(10,20,50,100), filter_pos = "none",
+                      show_rownames = FALSE) {
   
-  assertthat::assert_that(tibble::is_tibble(data) | base::is.data.frame(data),
+  assertthat::assert_that(tibble::is_tibble(data) | base::is.data.frame(data) | base::is.matrix(data),
                           msg = "data supplied to dt_setup must be a tibble or data frame")
   
   if(is.null(dt_options)){
@@ -44,7 +46,7 @@ dt_setup <-  function(data, n_rows = 10, lineHeight="80%", dom_opt = "tip",
   }
   
   dt_table <- DT::datatable(data,
-                rownames = FALSE,
+                rownames = show_rownames,
                 selection = selection,
                 escape = FALSE,
                 filter = filter_pos,
@@ -59,3 +61,32 @@ dt_setup <-  function(data, n_rows = 10, lineHeight="80%", dom_opt = "tip",
   dt_table   
   
 }
+
+
+#' Extract sample names from metadata
+#'
+#' @param metadata dataframe or tibble containing the metadata
+#'
+#' @return vector of sample names
+#' @export
+#'
+#' @examples
+#' get_all_sample_names(metadata)
+get_all_sample_names <- function(metadata){
+  
+  assertthat::assert_that(base::is.character(golem::get_golem_options("sample_names")),
+                          msg = "sample names not defined in starting golem script")
+  
+  samples <- dplyr::pull(metadata, .data[[golem::get_golem_options("sample_names")]])
+
+  assertthat::assert_that(assertthat::not_empty(samples), msg = "samples names not found")
+  assertthat::assert_that(base::is.vector(samples), msg = "samples not in vector form")
+  
+  samples
+}  
+  
+  
+  
+  
+  
+  
