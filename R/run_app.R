@@ -8,12 +8,17 @@
 run_app <- function(
   ...
 ) {
+
   with_golem_options(
     app = shinyApp(
       ui = app_ui, 
       server = app_server
     ), 
-    golem_opts = list(...)
+    golem_opts = list(metadata = readRDS("inst/metaFem.rds"),
+                      dataset  = readRDS("inst/femExpression.rds"))
   )
 }
 
+
+#library(golem); library(devtools)
+#load_all()
