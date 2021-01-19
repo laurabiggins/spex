@@ -20,11 +20,12 @@ usethis::use_package("DT")
 usethis::use_package("assertthat")
 usethis::use_package("tibble")
 usethis::use_package("ggplot2")
+usethis::use_package("magrittr", "Depends")
 
 ## Add modules ----
 ## Create a module infrastructure in R/
-golem::add_module( name = "scatterplot" ) # Name of the module
-golem::add_module( name = "histogram" ) # Name of the module
+golem::add_module(name = "scatterplot") # Name of the module
+golem::add_module(name = "histogram") # Name of the module
 
 ## Add helper functions ----
 ## Creates ftc_* and utils_*

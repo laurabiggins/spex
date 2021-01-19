@@ -16,7 +16,8 @@ Imports:
     dplyr,
     assertthat,
     tibble,
-    ggplot2
+    ggplot2,
+    pkgload
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
@@ -26,3 +27,5 @@ Suggests:
     rmarkdown
 Config/testthat/edition: 3
 VignetteBuilder: knitr
+Depends: 
+    magrittr

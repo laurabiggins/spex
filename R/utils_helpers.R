@@ -74,7 +74,7 @@ dt_setup <-  function(data, n_rows = 10, lineHeight="80%", dom_opt = "tip",
 #' get_all_sample_names(metadata)
 get_all_sample_names <- function(metadata){
   
-  assertthat::assert_that(base::is.character(golem::get_golem_options("sample_names")),
+  assertthat::validate_that(base::is.character(golem::get_golem_options("sample_names")),
                           msg = "sample names not defined in starting golem script")
   
   samples <- dplyr::pull(metadata, .data[[golem::get_golem_options("sample_names")]])

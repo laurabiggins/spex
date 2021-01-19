@@ -36,7 +36,7 @@ mod_histogramServer <- function(id, prefix = "") {
   moduleServer(
     id,
     function(input, output, session) {
-      output$plot <- renderPlot(hist(rnorm(500)))
+      output$plot <- renderPlot(graphics::hist(stats::rnorm(500)))
     }
   )
 }
