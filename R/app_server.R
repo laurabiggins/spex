@@ -14,8 +14,9 @@ app_server <- function( input, output, session ) {
   
   output$meta_summary <- renderTable(meta_sum[[input$selected_condition]])
   
-  output$data_table <- DT::renderDataTable(dt_setup(dataset, n_rows = 20, 
-                                                    dom_opt = "ftlip", show_rownames = TRUE))
+  output$data_table <- DT::renderDataTable(
+    dt_setup(dataset, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
+  )
 
   mod_histogramServer("hist")
   

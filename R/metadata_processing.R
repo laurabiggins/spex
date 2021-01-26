@@ -13,7 +13,7 @@ get_condition_summary <- function(metadata){
   
   conditions <- base::colnames(metadata)
   
-  base::sapply(conditions, simplify = FALSE, USE.NAMES = TRUE, function(x){
+  base::sapply(conditions, simplify = FALSE, USE.NAMES = TRUE, function(x) {
      dplyr::count(metadata, .data[[x]])
   })
   

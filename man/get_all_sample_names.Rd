@@ -7,7 +7,7 @@
 get_all_sample_names(metadata)
 }
 \arguments{
-\item{metadata}{dataframe or tibble containing the metadata}
+\item{metadata}{A `dataframe` or `tibble` containing the metadata.}
 }
 \value{
 vector of sample names

@@ -20,43 +20,50 @@ app_ui <- function(request) {
     golem_add_external_resources(),
     # List the first level UI elements here 
     fluidPage(
-      
       titlePanel("Dataset title"),
-      
       tabsetPanel(
-        tabPanel("metadata",
-                 br(),
-                 sidebarLayout(
-                   sidebarPanel(width = 3,
-                                checkboxInput("show_meta", "show all metadata", value = TRUE),
-                                # checkboxInput("show_meta_summary", "show metadata summary"),
-                                # conditionalPanel(condition = "input.show_meta_summary == 1",
-                                #                  selectInput("selected_condition", 
-                                #                              "select condition",
-                                #                              #choices = meta_sum)
-                                #                              choices = names(meta_sum)),
-                                # ),
-                                actionButton("browser", "browser")
-                   ),
-                   mainPanel(width = 9,
-                             conditionalPanel(condition = "input.show_meta_summary == 1",
-                                              tableOutput("meta_summary")),
-                             
-                             conditionalPanel(condition = "input.show_meta == 1", 
-                                              DT::dataTableOutput("meta_table"))
-                   )
-                 )
+        tabPanel(
+          "metadata",
+          br(),
+          sidebarLayout(
+            sidebarPanel(
+              width = 3,
+              checkboxInput("show_meta", "show all metadata", value = TRUE),
+                # checkboxInput("show_meta_summary", "show metadata summary"),
+                # conditionalPanel(condition = "input.show_meta_summary == 1",
+                #                  selectInput("selected_condition", 
+                #                              "select condition",
+                #                              #choices = meta_sum)
+                #                              choices = names(meta_sum)),
+                # ),
+              actionButton("browser", "browser")
+            ),
+            mainPanel(
+              width = 9,
+              conditionalPanel(
+                condition = "input.show_meta_summary == 1",
+                tableOutput("meta_summary")
+              ),
+              conditionalPanel(
+                condition = "input.show_meta == 1", 
+                DT::dataTableOutput("meta_table")
+              )
+            )
+          )
         ),
-        tabPanel("data",
-                 br(),
-                 DT::dataTableOutput("data_table")),
-        tabPanel("plot",
-                 navlistPanel("plot type",
-                              tabPanel("scatterplot",
-                                       mod_scatterplot_ui("scatter", samples)),
-                              tabPanel("histogram", 
-                                       mod_histogramUI("hist")),
-                              widths = c(3,9))
+        tabPanel(
+          "data",
+          br(),
+          DT::dataTableOutput("data_table")
+        ),
+        tabPanel(
+          "plot",
+          navlistPanel(
+            "plot type",
+            tabPanel("scatterplot", mod_scatterplot_ui("scatter", samples)),
+            tabPanel("histogram", mod_histogramUI("hist")),
+            widths = c(3,9)
+          )
         )
       )
     )
