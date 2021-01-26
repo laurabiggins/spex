@@ -12,7 +12,11 @@ app_server <- function( input, output, session ) {
   
   output$meta_table <- DT::renderDataTable(dt_setup(metadata, n_rows = 20))
   
-  output$meta_summary <- renderTable(meta_sum[[input$selected_condition]])
+  output$meta_summary <- renderTable({
+    req(input$selected_condition)
+    req(meta_sum)
+    meta_sum[[input$selected_condition]]
+  })
   
   output$data_table <- DT::renderDataTable(
     dt_setup(dataset, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
