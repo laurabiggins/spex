@@ -64,6 +64,35 @@ app_ui <- function(request) {
             tabPanel("histogram", mod_histogramUI("hist")),
             widths = c(3,9)
           )
+        ),
+        tabPanel(
+          "filter",
+          wellPanel(
+            style = "margin: 10px 0px",
+            h3("Filter summary: "),
+            textOutput("filter_summary"),
+            actionButton("browser", "browser")
+          ),
+          navlistPanel(
+            id = "nav_name",
+            well = FALSE,
+            widths = c(3,9)
+          ),
+          wellPanel(
+            fluidRow(
+              column(
+                width = 4, 
+                offset = 2,
+                align = "center",
+                actionButton("filter_button", "Filter data")
+              ),
+              column(
+                width = 4,
+                align = "center",
+                actionButton("clear_filters", "Clear all filters")
+              )  
+            )
+          )
         )
       )
     )
