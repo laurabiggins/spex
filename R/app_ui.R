@@ -60,7 +60,8 @@ app_ui <- function(request) {
           "plot",
           navlistPanel(
             "plot type",
-            tabPanel("scatterplot", mod_scatterplot_ui("scatter", samples)),
+            tabPanel("scatterplot", mod_scatterplot_ui("scatter", samples, meta_sum)),
+            tabPanel("boxplot", mod_boxplot_ui("boxplot", samples, meta_sum)),
             tabPanel("histogram", mod_histogramUI("hist")),
             widths = c(3,9)
           )

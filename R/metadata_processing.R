@@ -17,9 +17,11 @@ get_condition_summary <- function(metadata){
   #    dplyr::count(metadata, .data[[x]])
   # })
   
-   purrr::map(conditions, function(x){
+   meta_summary <- purrr::map(conditions, function(x){
     # browser()
      dplyr::count(metadata, .data[[x]])
   })
+  names(meta_summary) <- conditions 
+  meta_summary
 }
 

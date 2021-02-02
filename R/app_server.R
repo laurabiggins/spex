@@ -9,7 +9,7 @@ app_server <- function( input, output, session ) {
   metadata <- golem::get_golem_options("metadata")
   meta_sum <- get_condition_summary(metadata) 
   dataset <- golem::get_golem_options("dataset")
-  sample_names <-golem::get_golem_options("sample_names")
+  sample_names <- golem::get_golem_options("sample_names")
   
   
   lapply(meta_sum, function(x) {
@@ -35,9 +35,11 @@ app_server <- function( input, output, session ) {
 
   mod_histogramServer("hist")
   
-  mod_scatterplot_server("scatter", dataset)
+  mod_scatterplot_server("scatter", filtered_dataset(), meta_sum, metadata, sample_name_col = sample_names)
   
-  observeEvent(input$browser, browser())
+  mod_boxplot_server("boxplot", filtered_dataset(), meta_sum, metadata, sample_name_col = sample_names)
+  
+ # observeEvent(input$browser, browser())
   
   observeEvent(input$filter_button, {
     select_factors <- paste0(input$nav_name, "-", "include_factors")
