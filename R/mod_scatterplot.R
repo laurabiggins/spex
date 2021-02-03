@@ -53,8 +53,8 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
                 ns("y_axis_multi"), 
                 label = "y axis", 
                 choices = "" 
-              )#,
-              #actionButton(ns("browser"), "browser")
+              ),
+              actionButton(ns("browser"), "browser")
             )
           ),  
          actionButton(ns("plot_button"), "plot")
@@ -63,6 +63,23 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
           width = 8,
           plotOutput(ns("plot"), width = "100%")#, height = "100%")
         )
+      ),
+      checkboxInput(inputId = "highlight_panel", label = "highlight subset"),
+      conditionalPanel(
+        condition = "input.highlight_panel == 1",
+        shinyWidgets::pickerInput(
+          inputId = ns("measure_selector"),
+          label = "Select measure",
+          choices = "",
+          multiple = TRUE,
+          options = shinyWidgets::pickerOptions(
+            actionsBox = TRUE,
+            liveSearch = TRUE, 
+            selectedTextFormat = "count > 10"
+          )
+        ),
+        actionButton(inputId = ns("highlight_button"), "highlight on plot"),
+        checkboxInput(inputId = ns("label_highlights"), label = "show labels")
       )  
     )
   )
@@ -85,6 +102,12 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     
     options <- reactive(get_choices(input$select_condition, meta_sum))
 
+    rv <- reactiveValues(label_highlighted = FALSE)
+    
+    observeEvent(input$label_highlights, {
+      rv$label_highlighted <- input$label_highlights
+    })
+    
     observeEvent(input$select_condition, {
       req(options())
       updateSelectInput(
@@ -100,21 +123,45 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
       )
     })
 
+    observeEvent(input$plot_button, {
+      
+      rv$selected_data <- selected_data()
+
+      shinyWidgets::updatePickerInput(
+        session,
+        inputId = "measure_selector",
+        choices = rv$selected_data$row_attribute)
+      
+    })
+    
+    observeEvent(input$highlight_button, {
+      
+      rv$selected_data <- dplyr::mutate(
+        rv$selected_data,
+        custom_colour = dplyr::if_else(
+          row_attribute %in% input$measure_selector,
+          "red",
+          "grey"
+        )
+      )
+    })
+    
     
     # the set of selected samples
-    selected_data <- eventReactive(input$plot_button, {
+    selected_data <- reactive({
       
-      switch(input$plot_samples, 
+      dataset <- switch(input$plot_samples, 
              single = get_single_data_samples(dataset, input$x_axis, input$y_axis),
              grouped = select_by_group(
-                                         metadata,
-                                         tibble_dataset(),
-                                         condition = input$select_condition,
-                                         sample_name_col = sample_name_col,
-                                         x_var = input$x_axis_multi,
-                                         y_var = input$y_axis_multi
-                                        )
+                                       metadata,
+                                       tibble_dataset(),
+                                       condition = input$select_condition,
+                                       sample_name_col = sample_name_col,
+                                       x_var = input$x_axis_multi,
+                                       y_var = input$y_axis_multi
+                                      )
              )
+      dplyr::mutate(dataset, custom_colour = "black")
     })
     
     x_var <- eventReactive(input$plot_button, {
@@ -131,7 +178,12 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
       )
     })
     
-    output$plot <- renderPlot(scatter(selected_data(), x_var(), y_var()))
+    output$plot <- renderPlot({
+      
+      req(rv$selected_data)
+      
+      scatter(rv$selected_data, x_var(), y_var(), rv$label_highlighted)
+    })
 
     observeEvent(input$browser, browser())
   })
@@ -147,17 +199,29 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
 #'
 #' @return ggplot object
 #' @noRd
-scatter <- function(dataset, x_var, y_var) {
+scatter <- function(dataset, x_var, y_var, label_subset) {
 
   req(x_var %in% colnames(dataset))
   req(y_var %in% colnames(dataset))
   
-  dataset %>%
+  dataset <- dplyr::arrange(dataset, custom_colour)
+  
+  p <- dataset %>%
     ggplot2::ggplot(
       ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]])
     ) +
-    ggplot2::geom_point() +
-    ggplot2::geom_abline(slope = 1, colour = "#3cc1f2")
+    ggplot2::geom_point(colour = dataset[["custom_colour"]]) +
+    ggplot2::geom_abline(slope = 1, colour = "#3cc1f2") +
+    ggplot2::theme(legend.position = "none") 
+  
+  if(label_subset){
+    p <- p + ggplot2::geom_text(
+      data = subset(dataset, custom_colour == "red"),
+      ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]], label = row_attribute),
+      nudge_x = 1
+      )
+  }
+  p
 }
 
 
