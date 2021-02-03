@@ -17,6 +17,7 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
       sidebarLayout(
         position = "right",
         sidebarPanel(
+          style = "padding: 10px",
           width = 4,
           tabsetPanel(
             id = ns("plot_samples"),
@@ -36,14 +37,13 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
               )
             ),
             tabPanel(
-              title = "condition",
+              title = "grouped",
               br(),
               selectInput(
                 inputId = ns("select_condition"),
-                label = "",
+                label = "select variable",
                 choices = names(meta_sum)
               ),
-              br(),
               selectInput(
                 ns("x_axis_multi"), 
                 label = "x axis", 
@@ -53,127 +53,102 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
                 ns("y_axis_multi"), 
                 label = "y axis", 
                 choices = "" 
-              ),
-              actionButton(ns("browser"), "browser")
+              )#,
+              #actionButton(ns("browser"), "browser")
             )
-          )  
-         # actionButton(ns("browser"), "browser")
+          ),  
+         actionButton(ns("plot_button"), "plot")
         ),
         mainPanel(
-          #width = 8,
+          width = 8,
           plotOutput(ns("plot"), width = "100%")#, height = "100%")
         )
       )  
     )
   )
 }
-    
-#' scatterplot Server Function
+
+#' scatterplot server function
+#' 
+#' This is fairly neat but I don't know if it's the most efficient way of selecting 
+#' and plotting. There are various combinations of reactives/observeEvent/eventReactive 
+#' that could be used.
 #'
 #' @noRd 
 mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_col, prefix = "", session) {
   
   moduleServer(id, function(input, output, session) {
     
+    # This breaks if it's not a reactive - I guess it's because it takes arguments
+    # from the server function??
+    tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
+    
+    options <- reactive(get_choices(input$select_condition, meta_sum))
+
     observeEvent(input$select_condition, {
-      
-      # does this need checking each time or can we extract it somewhere?
-      assertthat::see_if(
-        assertthat::has_name(
-          meta_sum[[input$select_condition]],
-          input$select_condition
-        ),  
-        msg = paste0("couldn't find the column ", input$select_condition, 
-                    " in meta_sum[[input$`scatter-select_condition`]]")
-      )
-      opts <- meta_sum[[input$select_condition]][[input$select_condition]]
-      assertthat::see_if(
-        length(opts) >= 2, 
-        msg = paste0("number of factors in selected option for scatterplot is only ", 
-                     length(opts), 
-                     " so will not work well in a scatterplot."
-              )
-      )  
+      req(options())
       updateSelectInput(
-        inputId = "x_axis_multi", 
-        choices = opts, 
+        inputId = "x_axis_multi",
+        choices = options(),
         session = session
       )
       updateSelectInput(
-        inputId = "y_axis_multi", 
-        choices = opts, 
+        inputId = "y_axis_multi",
+        choices = options(),
         session = session,
-        selected = opts[2]
+        selected = options()[2]
       )
-      
     })
 
-    # this doesn't need to be reactive
-    tibble_dataset <- reactive({
-      tib_data <- tibble::as_tibble(dataset, rownames = "row_attribute")
-      tidyr::pivot_longer(tib_data, !row_attribute, names_to = sample_name_col)
-    })
     
     # the set of selected samples
-    selected_data <- reactive({
+    selected_data <- eventReactive(input$plot_button, {
       
-      if(input$plot_samples == "single") {
-        return(list(
-          dataset = get_single_data_samples(dataset, input$x_axis, input$y_axis),
-          x_axis = input$x_axis, 
-          y_axis = input$y_axis
-        ))
-      } else if (input$plot_samples == "condition"){
-
-          filt_meta <- dplyr::filter(
-            metadata, 
-            .data[[input$select_condition]] %in% c(input$x_axis_multi, input$y_axis_multi)
-          )
-          filt_meta <- dplyr::select(filt_meta, c(input$select_condition, sample_name_col)) 
-          joined_meta <- dplyr::inner_join(filt_meta, tibble_dataset())
-          grouped <- dplyr::group_by(joined_meta, .data[[input$select_condition]], row_attribute) 
-          summarised <- dplyr::ungroup(dplyr::summarise(grouped, mean_val = mean(value)))
-          
-          meta_wider <- tidyr::pivot_wider(
-            summarised, 
-            names_from = input$select_condition, 
-            values_from = mean_val
-          )
-
-          list(
-            dataset = meta_wider,
-            x_axis = input$x_axis_multi,
-            y_axis = input$y_axis_multi
-          ) 
-      } else {
-          print("oops, should have been single or condition in scatter selection")
-      }
+      switch(input$plot_samples, 
+             single = get_single_data_samples(dataset, input$x_axis, input$y_axis),
+             grouped = select_by_group(
+                                         metadata,
+                                         tibble_dataset(),
+                                         condition = input$select_condition,
+                                         sample_name_col = sample_name_col,
+                                         x_var = input$x_axis_multi,
+                                         y_var = input$y_axis_multi
+                                        )
+             )
     })
     
-    output$plot <- renderPlot({
-      scatter(selected_data())
+    x_var <- eventReactive(input$plot_button, {
+      switch(input$plot_samples,
+             single = input$x_axis,
+             grouped = input$x_axis_multi
+      )
     })
+    
+    y_var <- eventReactive(input$plot_button, {
+      switch(input$plot_samples,
+             single = input$y_axis,
+             grouped = input$y_axis_multi
+      )
+    })
+    
+    output$plot <- renderPlot(scatter(selected_data(), x_var(), y_var()))
 
     observeEvent(input$browser, browser())
   })
 }
 
 
-scatter <- function(selected_data) {
+#' scatter plot function
+#'
+#' @param dataset dataset in tibble format that should contain columns with the 
+#' same names as x_var and y_var
+#' @param x_var variable to plot on the x axis
+#' @param y_var variable to plot on the x axis
+#'
+#' @return ggplot object
+#' @noRd
+scatter <- function(dataset, x_var, y_var) {
 
-  # assertthat::assert_that(
-  #   is.character(x1), 
-  #   msg = "character value for for x axis selection required"
-  # )
-  # assertthat::assert_that(
-  #   is.character(y1), 
-  #   msg = "character value for for y axis selection required"
-  # )
-  
-  dataset <- selected_data$dataset
-  x_var <- selected_data$x_axis
-  y_var <- selected_data$y_axis
-  
   req(x_var %in% colnames(dataset))
   req(y_var %in% colnames(dataset))
   
@@ -181,9 +156,8 @@ scatter <- function(selected_data) {
     ggplot2::ggplot(
       ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]])
     ) +
-    ggplot2::geom_point() #+#size = input$point_size) +
-    #ggplot2::geom_boxplot() #+
-    #ggplot2::geom_abline(slope = 1, colour = "#3cc1f2")
+    ggplot2::geom_point() +
+    ggplot2::geom_abline(slope = 1, colour = "#3cc1f2")
 }
 
 
@@ -207,3 +181,79 @@ get_single_data_samples <- function(dataset, x1, y1){
 
   tibble::as_tibble(dataset[,c(x1,y1)])
 }
+
+#' get_choices
+#' 
+#' Check which categories are available for a chosen condition.
+#'
+#' @param selected_condition 
+#' @param meta_sum 
+#'
+#' @return
+#' @export
+#'
+#' @noRd
+get_choices <- function(selected_condition, meta_sum){
+  
+  assertthat::see_if(
+    assertthat::has_name(
+      meta_sum[[selected_condition]],
+      selected_condition
+    ),  
+    msg = paste0("couldn't find the column ", selected_condition, 
+                 " in meta_sum[[input$`scatter-select_condition`]]")
+  )
+  opts <- meta_sum[[selected_condition]][[selected_condition]]
+  assertthat::see_if(
+    length(opts) >= 2, 
+    msg = paste0("number of factors in selected option for scatterplot is only ", 
+                 length(opts), 
+                 " so will not work well in a scatterplot."
+    )
+  )  
+  opts
+}
+
+#' get_tibble_dataset
+#' 
+#' Convert the main matrix dataset into a tibble
+#'
+#' @param matrix_data main dataset
+#' @param sample_name_col column name that contains all the sample names (should
+#' be set in the initial golem options, then passed through as a function argument
+#' to the module)
+#'
+#' @return tibble
+get_tibble_dataset <- function(matrix_data, sample_name_col) {
+  tib_data <- tibble::as_tibble(matrix_data, rownames = "row_attribute")
+  tidyr::pivot_longer(tib_data, !row_attribute, names_to = sample_name_col)
+}
+
+#' select_by_group
+#' 
+#' This function allows samples to be selected by group. It calculates the mean value
+#' for each measure within the group.
+#'
+#' @param metadata the metadata tibble
+#' @param tibble_dataset the main dataset in tibble format
+#' @param condition the condition that we want to pull the groups from
+#' @param sample_name_col the name of the column that contains all the sample names
+#' @param x_var group 1 
+#' @param y_var group 2
+#'
+#' @return
+#' @export
+#'
+#' @examples
+select_by_group <- function(metadata, tibble_dataset, condition, sample_name_col, x_var, y_var){
+  
+  summarised <- metadata %>%
+    dplyr::filter(.data[[condition]] %in% c(x_var, y_var)) %>%
+    dplyr::select(c(condition, sample_name_col)) %>%
+    dplyr::inner_join(tibble_dataset) %>%
+    dplyr::group_by(.data[[condition]], row_attribute) %>%
+    dplyr::summarise(mean_val = mean(value)) %>%
+    dplyr::ungroup()
+  
+  tidyr::pivot_wider(summarised, names_from = condition, values_from = mean_val)  
+} 
