@@ -64,7 +64,7 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
           plotOutput(ns("plot"), width = "100%")#, height = "100%")
         )
       ),
-      checkboxInput(inputId = "highlight_panel", label = "highlight subset"),
+      checkboxInput(inputId = "highlight_panel", label = "show highlight subset options"),
       conditionalPanel(
         condition = "input.highlight_panel == 1",
         shinyWidgets::pickerInput(
