@@ -29,15 +29,47 @@ app_ui <- function(request) {
         primary = bab_light_blue,
         secondary = bab_light_blue),
       titlePanel(
-        fluidRow(
-          column(width = 6, h2("Title")),
-          column(width = 2, offset = 4, tags$img(src = "bioinformatics_logo_square_small.png", width = "120", height = "120")),
-        ),
-        windowTitle="MyPage"
+        tags$img(
+          src = "bioinformatics_logo_square_small.png", 
+          style="margin-top: -10px; padding-right:10px; padding-bottom:10px", 
+          width = "70", 
+          height = "70",
+          align = "right"
+          ),
+        windowTitle="spex"
       ),
-      
+      br(),
       #titlePanel("Dataset title"),
       tabsetPanel(
+        tabPanel(
+          "info",
+          br(),
+          sidebarLayout(
+            sidebarPanel(
+              width = 3,
+              selectInput(
+                inputId = "choose_dataset",
+                label = "Choose dataset",
+                choices = c("to be populated", 2, 3),
+              ),
+              p("Explore your chosen dataset by using the tabs above."),
+              p("Sample names and experimental conditions are shown in the metadata section."),
+              p("The data tab shows the whole dataset, which can be downloaded if required."),
+              p("A range of plots can be viewed and downloaded to explore different aspects of the dataset.")
+            ),
+            mainPanel(
+              br(),
+              titlePanel(h1("dataset name", align = "center")),
+              br(),
+              h5("Information about the dataset and publication link"),
+              br(),br(),br(),
+              br(),br(),br(),br(),br(),br(),br(),
+              h6("For more information about work carried out at the Babraham Institute
+                 visit the", a(href= "https://www.babraham.ac.uk/", "website")),
+              br(),br(),br(),br()
+            )
+          )  
+        ),  
         tabPanel(
           "metadata",
           br(),
@@ -76,9 +108,9 @@ app_ui <- function(request) {
           "plot",
           navlistPanel(
             "plot type",
+            tabPanel("histogram", mod_histogramUI("hist")),
             tabPanel("scatterplot", mod_scatterplot_ui("scatter", samples, meta_sum)),
             tabPanel("boxplot", mod_boxplot_ui("boxplot", samples, meta_sum)),
-            tabPanel("histogram", mod_histogramUI("hist")),
             widths = c(3,9)
           )
         ),
@@ -113,11 +145,23 @@ app_ui <- function(request) {
         )
       ),
       br(),
-      
-      flowLayout(
-        tags$img(src = "bioinformatics_logo_small_grey.png", width = "200", height = "71"),
-        p("Any problems please email laura.biggins@babraham.ac.uk")
+      fluidRow(
+        column(
+          width = 3,
+          tags$img(src = "bioinformatics_logo_small_grey.png", width = "200", height = "71")
+        ),
+        column(
+          width = 6,
+          offset = 3,
+          br(),
+          br(),
+          p("Any problems please email laura.biggins@babraham.ac.uk", style = "font-size:12px", align = "right")
+        )  
       ),
+      # flowLayout(
+      #   tags$img(src = "bioinformatics_logo_small_grey.png", width = "200", height = "71"),
+      #   p("Any problems please email laura.biggins@babraham.ac.uk", style = "font-size:12px", align = "right")
+      # ),
       br()
     )
   )
