@@ -19,67 +19,49 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
         sidebarPanel(
           style = "padding: 10px",
           width = 4,
-          tabsetPanel(
-            id = ns("plot_samples"),
-            tabPanel(
-              title = "single",
-              br(),
-              selectInput(
-                ns("x_axis"), 
-                label = "x axis", 
-                choices = individual_samples
-              ),
-              selectInput(
-                ns("y_axis"), 
-                label = "y axis", 
-                choices = individual_samples, 
-                selected = individual_samples[2]
-              )
-            ),
-            tabPanel(
-              title = "grouped",
-              br(),
-              selectInput(
-                inputId = ns("select_condition"),
-                label = "select variable",
-                choices = names(meta_sum)
-              ),
-              selectInput(
-                ns("x_axis_multi"), 
-                label = "x axis", 
-                choices = ""
-              ),
-              selectInput(
-                ns("y_axis_multi"), 
-                label = "y axis", 
-                choices = "" 
-              ),
-              actionButton(ns("browser"), "browser")
-            )
-          ),  
-         actionButton(ns("plot_button"), "plot")
+          selectInput(
+            inputId = ns("select_condition"),
+            label = "select variable",
+            choices = names(meta_sum)
+          ),
+          selectInput(
+            ns("x_axis_multi"), 
+            label = "x axis", 
+            choices = ""
+          ),
+          selectInput(
+            ns("y_axis_multi"), 
+            label = "y axis", 
+            choices = "" 
+          ),
+          #actionButton(ns("browser"), "browser"),
+          actionButton(ns("plot_button"), "Update plot")
         ),
         mainPanel(
           width = 8,
-          plotOutput(ns("plot"), width = "100%")#, height = "100%")
+          #withSpinner(plotlyOutput(ns("plot")), image = "bioinf1.gif", image.width = 100)
+          shinycssloaders::withSpinner(plotOutput(ns("plot"), width = "100%"), image = "bioinf1.gif", image.width = 100)
+          #plotOutput(ns("plot"), width = "100%")#, height = "100%")
         )
       ),
-      checkboxInput(inputId = "highlight_panel", label = "show highlight subset options"),
+      checkboxInput(inputId = "highlight_panel", label = "show highlight options"),
       conditionalPanel(
         condition = "input.highlight_panel == 1",
-        shinyWidgets::pickerInput(
-          inputId = ns("measure_selector"),
-          label = "Select measure",
-          choices = "",
-          multiple = TRUE,
-          options = shinyWidgets::pickerOptions(
-            actionsBox = TRUE,
-            liveSearch = TRUE, 
-            selectedTextFormat = "count > 10"
-          )
-        ),
-        actionButton(inputId = ns("highlight_button"), "highlight on plot"),
-        checkboxInput(inputId = ns("label_highlights"), label = "show labels")
+        wellPanel(
+          shinyWidgets::pickerInput(
+            inputId = ns("measure_selector"),
+            label = "Select measure",
+            choices = "",
+            multiple = TRUE,
+            options = shinyWidgets::pickerOptions(
+              actionsBox = TRUE,
+              liveSearch = TRUE, 
+              selectedTextFormat = "count > 10"
+            )
+          ),
+          actionButton(inputId = ns("highlight_button"), "highlight on plot"),
+          checkboxInput(inputId = ns("label_highlights"), label = "show labels")
+        )
       )  
     )
   )
@@ -146,43 +128,25 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
       )
     })
     
-    
     # the set of selected samples
     selected_data <- reactive({
       
-      dataset <- switch(input$plot_samples, 
-             single = get_single_data_samples(dataset, input$x_axis, input$y_axis),
-             grouped = select_by_group(
-                                       metadata,
-                                       tibble_dataset(),
-                                       condition = input$select_condition,
-                                       sample_name_col = sample_name_col,
-                                       x_var = input$x_axis_multi,
-                                       y_var = input$y_axis_multi
-                                      )
-             )
+      dataset <- select_by_group(
+                                 metadata,
+                                 tibble_dataset(),
+                                 condition = input$select_condition,
+                                 sample_name_col = sample_name_col,
+                                 x_var = input$x_axis_multi,
+                                 y_var = input$y_axis_multi
+                                )
       dplyr::mutate(dataset, custom_colour = "black")
     })
-    
-    x_var <- eventReactive(input$plot_button, {
-      switch(input$plot_samples,
-             single = input$x_axis,
-             grouped = input$x_axis_multi
-      )
-    })
-    
-    y_var <- eventReactive(input$plot_button, {
-      switch(input$plot_samples,
-             single = input$y_axis,
-             grouped = input$y_axis_multi
-      )
-    })
-    
+
     output$plot <- renderPlot({
       
       req(rv$selected_data)
       
-      scatter(rv$selected_data, x_var(), y_var(), rv$label_highlighted)
+      scatter(rv$selected_data, input$x_axis_multi, input$y_axis_multi, rv$label_highlighted)
     })
 
     observeEvent(input$browser, browser())
@@ -232,19 +196,19 @@ scatter <- function(dataset, x_var, y_var, label_subset) {
 #' @param y1 single sample to show on y axis
 #'
 #' @noRd 
-get_single_data_samples <- function(dataset, x1, y1){
-
-  assertthat::assert_that(
-    is.matrix(dataset),
-    msg = "dataset passed to mod_scatterplot must be a matrix"
-  )
-  assertthat::assert_that(
-    assertthat::has_attr(dataset, "dimnames"),
-    msg = "dataset must have rownames"
-  )
-
-  tibble::as_tibble(dataset[,c(x1,y1)])
-}
+# get_single_data_samples <- function(dataset, x1, y1){
+# 
+#   assertthat::assert_that(
+#     is.matrix(dataset),
+#     msg = "dataset passed to mod_scatterplot must be a matrix"
+#   )
+#   assertthat::assert_that(
+#     assertthat::has_attr(dataset, "dimnames"),
+#     msg = "dataset must have rownames"
+#   )
+# 
+#   tibble::as_tibble(dataset[,c(x1,y1)])
+# }
 
 #' get_choices
 #' 
