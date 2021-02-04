@@ -10,7 +10,7 @@ app_server <- function( input, output, session ) {
   meta_sum <- get_condition_summary(metadata) 
   dataset <- golem::get_golem_options("dataset")
   sample_names <- golem::get_golem_options("sample_names")
-  
+  #thematic::thematic_on(bg = "#1d305f", fg = "white")
   
   lapply(meta_sum, function(x) {
     prependTab(
@@ -22,6 +22,8 @@ app_server <- function( input, output, session ) {
   filtered_dataset <- reactiveVal(dataset)
   
   output$meta_table <- DT::renderDataTable(dt_setup(metadata, n_rows = 20))
+  
+  #output$meta_table <- DT::renderDataTable(metadata, style = "bootstrap4")
   
   output$meta_summary <- renderTable({
     req(input$selected_condition)

@@ -8,7 +8,7 @@
 run_app <- function(
   ...
 ) {
-
+  #thematic::thematic_on(bg = "#1d305f", fg = "white")
   with_golem_options(
     app = shinyApp(
       ui = app_ui, 

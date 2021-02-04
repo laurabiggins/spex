@@ -14,13 +14,29 @@ app_ui <- function(request) {
   metadata <- golem::get_golem_options("metadata")
   meta_sum <- get_condition_summary(metadata)
   samples <- get_all_sample_names(metadata)
+  bab_light_blue <- "#00aeef"
+  bab_dark_blue <- "#1d305f"
+  #thematic::thematic_on(bg = "#1d305f", fg = "white")
   
   tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),
     # List the first level UI elements here 
     fluidPage(
-      titlePanel("Dataset title"),
+      theme = bslib::bs_theme(
+        bg = bab_dark_blue, 
+        fg = "white", 
+        primary = bab_light_blue,
+        secondary = bab_light_blue),
+      titlePanel(
+        fluidRow(
+          column(width = 6, h2("Title")),
+          column(width = 2, offset = 4, tags$img(src = "bioinformatics_logo_square_small.png", width = "120", height = "120")),
+        ),
+        windowTitle="MyPage"
+      ),
+      
+      #titlePanel("Dataset title"),
       tabsetPanel(
         tabPanel(
           "metadata",
@@ -95,7 +111,14 @@ app_ui <- function(request) {
             )
           )
         )
-      )
+      ),
+      br(),
+      
+      flowLayout(
+        tags$img(src = "bioinformatics_logo_small_grey.png", width = "200", height = "71"),
+        p("Any problems please email laura.biggins@babraham.ac.uk")
+      ),
+      br()
     )
   )
 }

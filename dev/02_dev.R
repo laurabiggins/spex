@@ -21,8 +21,10 @@ usethis::use_package("assertthat")
 usethis::use_package("tibble")
 usethis::use_package("ggplot2")
 usethis::use_package("magrittr", "Depends")
-usethis::use_package("purrr"),
+usethis::use_package("purrr")
 usethis::use_package("shinyWidgets")
+usethis::use_package("shinycssloaders")
+usethis::use_package("bslib")
 
 ## Add modules ----
 ## Create a module infrastructure in R/

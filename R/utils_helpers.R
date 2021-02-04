@@ -44,7 +44,8 @@ dt_setup <-  function(data,
                       selection = "single", 
                       table_lengths = c(10,20,50,100), 
                       filter_pos = "none",
-                      show_rownames = FALSE) {
+                      show_rownames = FALSE,
+                      style = "bootstrap4") {
   
   assertthat::assert_that(
     tibble::is_tibble(data) | base::is.data.frame(data) | base::is.matrix(data), 
@@ -63,11 +64,12 @@ dt_setup <-  function(data,
   
   dt_table <- DT::datatable(
     data,
+    style = style,
     rownames = show_rownames,
     escape   = FALSE,
     filter   = filter_pos,
     options  = dt_options,
-    selection = selection,
+    selection = selection
                 
   ) %>%
     DT::formatStyle(0, target = 'row', lineHeight = lineHeight)
