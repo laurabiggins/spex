@@ -12,6 +12,7 @@
 app_ui <- function(request) {
   
   metadata <- golem::get_golem_options("metadata")
+  of_interest <- golem::get_golem_options("of_interest")
   meta_sum <- get_condition_summary(metadata)
   samples <- get_all_sample_names(metadata)
   bab_light_blue <- "#00aeef"
@@ -19,6 +20,7 @@ app_ui <- function(request) {
   #thematic::thematic_on(bg = "#1d305f", fg = "white")
   
   tagList(
+    
     # Leave this function for adding external resources
     golem_add_external_resources(),
     # List the first level UI elements here 
@@ -110,6 +112,7 @@ app_ui <- function(request) {
             "plot type",
             tabPanel("histogram", mod_histogramUI("hist")),
             tabPanel("scatterplot", mod_scatterplot_ui("scatter", samples, meta_sum)),
+            tabPanel("heatmap", mod_heatmap_ui("heatmap", samples, meta_sum)),
             tabPanel("boxplot", mod_boxplot_ui("boxplot", samples, meta_sum)),
             widths = c(3,9)
           )

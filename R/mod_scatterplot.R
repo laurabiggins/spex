@@ -34,8 +34,12 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
             label = "y axis", 
             choices = "" 
           ),
-          #actionButton(ns("browser"), "browser"),
-          actionButton(ns("plot_button"), "Update plot")
+          actionButton(ns("browser"), "browser"),
+          actionButton(ns("plot_button"), "Update plot"),
+          br(),
+          br(),
+          downloadButton(ns("download_png"), "png"),
+          downloadButton(ns("download_pdf"), "pdf")
         ),
         mainPanel(
           width = 8,
@@ -44,6 +48,7 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
           #plotOutput(ns("plot"), width = "100%")#, height = "100%")
         )
       ),
+      checkboxInput(ns("highlight_genes"), label = "highlight measure of interest"),
       checkboxInput(inputId = "highlight_panel", label = "show highlight options"),
       conditionalPanel(
         condition = "input.highlight_panel == 1",
@@ -74,7 +79,7 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
 #' that could be used.
 #'
 #' @noRd 
-mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_col, prefix = "", session) {
+mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_col, of_interest, prefix = "", session) {
   
   moduleServer(id, function(input, output, session) {
     
@@ -85,6 +90,9 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     options <- reactive(get_choices(input$select_condition, meta_sum))
 
     rv <- reactiveValues(label_highlighted = FALSE)
+    
+    # this needs to be made more generic
+    genes_of_interest <- dplyr::pull(of_interest, gene)
     
     observeEvent(input$label_highlights, {
       rv$label_highlighted <- input$label_highlights
@@ -116,7 +124,27 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
       
     })
     
+    observeEvent(input$highlight_genes, {
+      
+      req(rv$selected_data)
+      
+      if(input$highlight_genes){
+        rv$selected_data <- dplyr::mutate(
+          rv$selected_data,
+          custom_colour = dplyr::if_else(
+            row_attribute %in% genes_of_interest,
+            "red",
+            "grey"
+          )
+        )
+      } else {
+        rv$selected_data <- dplyr::mutate(rv$selected_data, custom_colour = "black")
+      }  
+    })
+    
     observeEvent(input$highlight_button, {
+      
+      req(rv$selected_data)
       
       rv$selected_data <- dplyr::mutate(
         rv$selected_data,
@@ -132,23 +160,53 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     selected_data <- reactive({
       
       dataset <- select_by_group(
-                                 metadata,
-                                 tibble_dataset(),
-                                 condition = input$select_condition,
-                                 sample_name_col = sample_name_col,
-                                 x_var = input$x_axis_multi,
-                                 y_var = input$y_axis_multi
-                                )
+                   metadata,
+                   tibble_dataset(),
+                   condition = input$select_condition,
+                   sample_name_col = sample_name_col,
+                   x_var = input$x_axis_multi,
+                   y_var = input$y_axis_multi
+                 )
+      
       dplyr::mutate(dataset, custom_colour = "black")
     })
 
-    output$plot <- renderPlot({
+    scatter_plot_object <- reactive({
       
       req(rv$selected_data)
       
-      scatter(rv$selected_data, input$x_axis_multi, input$y_axis_multi, rv$label_highlighted)
+      scatter(
+        rv$selected_data, 
+        input$x_axis_multi, 
+        input$y_axis_multi, 
+        rv$label_highlighted
+      )
+      
+    })
+    
+    output$plot <- renderPlot({
+      req(rv$selected_data)
+      scatter_plot_object()      
     })
 
+    output$download_png <- downloadHandler(
+      filename = function() {
+        paste0("scatter.png")
+      },
+      content = function(file) {
+        ggplot2::ggsave(file, scatter_plot_object(), device = "png")
+      }
+    )
+    
+    output$download_pdf <- downloadHandler(
+      filename = function() {
+        paste0("scatter.pdf")
+      },
+      content = function(file) {
+        ggplot2::ggsave(file, scatter_plot_object(), device = "pdf")
+      }
+    )
+    
     observeEvent(input$browser, browser())
   })
 }

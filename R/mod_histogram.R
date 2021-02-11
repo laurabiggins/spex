@@ -18,8 +18,11 @@ mod_histogramUI <- function(id){
   ns <- NS(id)
   
   tagList(
-    wellPanel(id = ns("panel"),
-              plotOutput(ns("plot"))
+    wellPanel(
+      id = ns("panel"),
+      plotOutput(ns("plot")),
+      br(),
+      downloadButton(ns("download_png"), "Download png")
     )  
   )
 }
@@ -36,7 +39,19 @@ mod_histogramServer <- function(id, prefix = "") {
   moduleServer(
     id,
     function(input, output, session) {
+      
       output$plot <- renderPlot(graphics::hist(stats::rnorm(500)))
+      
+      output$download_png <- downloadHandler(
+        filename = function() {
+          paste0("histogram.png")
+        },
+        content = function(file) {
+          png(filename = file)
+          graphics::hist(stats::rnorm(500))
+          dev.off()
+        }
+      )
     }
   )
 }

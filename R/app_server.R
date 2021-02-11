@@ -10,6 +10,7 @@ app_server <- function( input, output, session ) {
   meta_sum <- get_condition_summary(metadata) 
   dataset <- golem::get_golem_options("dataset")
   sample_names <- golem::get_golem_options("sample_names")
+  of_interest <- golem::get_golem_options("of_interest")
   #thematic::thematic_on(bg = "#1d305f", fg = "white")
   
   lapply(meta_sum, function(x) {
@@ -37,7 +38,9 @@ app_server <- function( input, output, session ) {
 
   mod_histogramServer("hist")
   
-  mod_scatterplot_server("scatter", filtered_dataset(), meta_sum, metadata, sample_name_col = sample_names)
+  mod_heatmap_server("heatmap", filtered_dataset(), meta_sum, metadata, sample_name_col = sample_names, of_interest = of_interest)
+  
+  mod_scatterplot_server("scatter", filtered_dataset(), meta_sum, metadata, sample_name_col = sample_names, of_interest = of_interest)
   
   mod_boxplot_server("boxplot", filtered_dataset(), meta_sum, metadata, sample_name_col = sample_names)
   
