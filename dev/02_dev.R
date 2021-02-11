@@ -25,6 +25,7 @@ usethis::use_package("purrr")
 usethis::use_package("shinyWidgets")
 usethis::use_package("shinycssloaders")
 usethis::use_package("bslib")
+usethis::use_package("pheatmap")
 
 ## Add modules ----
 ## Create a module infrastructure in R/
