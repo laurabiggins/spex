@@ -43,7 +43,6 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
         ),
         mainPanel(
           width = 8,
-          #withSpinner(plotlyOutput(ns("plot")), image = "bioinf1.gif", image.width = 100)
           shinycssloaders::withSpinner(plotOutput(ns("plot"), width = "100%"), image = "bioinf1.gif", image.width = 100)
           #plotOutput(ns("plot"), width = "100%")#, height = "100%")
         )
@@ -92,7 +91,7 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     rv <- reactiveValues(label_highlighted = FALSE)
     
     # this needs to be made more generic
-    genes_of_interest <- dplyr::pull(of_interest, gene)
+    genes_of_interest <- dplyr::pull(of_interest[[1]], gene)
     
     observeEvent(input$label_highlights, {
       rv$label_highlighted <- input$label_highlights
@@ -320,7 +319,7 @@ select_by_group <- function(metadata, tibble_dataset, condition, sample_name_col
   
   selected_data <- dplyr::inner_join(selected_samples, tibble_dataset)
   
-  if(n_samples < 2 | length(unique(pull(selected_data, sample_name_col))) < 2) {
+  if(n_samples < 2 | length(unique(selected_data[[sample_name_col]])) < 2) {
     stop("only found 1 selected variable to plot on scatter")
   }
   # whether to group and summarise
