@@ -211,7 +211,6 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
   })
 }
 
-
 #' scatter plot function
 #'
 #' @param dataset dataset in tibble format that should contain columns with the 
@@ -245,28 +244,6 @@ scatter <- function(dataset, x_var, y_var, label_subset) {
   }
   p
 }
-
-
-#' get_single_data_samples
-#' 
-#' @param dataset data matrix 
-#' @param x1 single sample to show on x axis
-#' @param y1 single sample to show on y axis
-#'
-#' @noRd 
-# get_single_data_samples <- function(dataset, x1, y1){
-# 
-#   assertthat::assert_that(
-#     is.matrix(dataset),
-#     msg = "dataset passed to mod_scatterplot must be a matrix"
-#   )
-#   assertthat::assert_that(
-#     assertthat::has_attr(dataset, "dimnames"),
-#     msg = "dataset must have rownames"
-#   )
-# 
-#   tibble::as_tibble(dataset[,c(x1,y1)])
-# }
 
 #' get_choices
 #' 
@@ -317,8 +294,10 @@ get_tibble_dataset <- function(matrix_data, sample_name_col) {
 
 #' select_by_group
 #' 
-#' This function allows samples to be selected by group. It calculates the mean value
-#' for each measure within the group.
+#' select by group or sample
+#' 
+#' If samples are selected by group, so that there are multiple samples per group, 
+#' the mean value for each measure within the group is calculated
 #'
 #' @param metadata the metadata tibble
 #' @param tibble_dataset the main dataset in tibble format
@@ -333,13 +312,26 @@ get_tibble_dataset <- function(matrix_data, sample_name_col) {
 #' @examples
 select_by_group <- function(metadata, tibble_dataset, condition, sample_name_col, x_var, y_var){
   
-  summarised <- metadata %>%
+  selected_samples <- metadata %>%
     dplyr::filter(.data[[condition]] %in% c(x_var, y_var)) %>%
-    dplyr::select(c(condition, sample_name_col)) %>%
-    dplyr::inner_join(tibble_dataset) %>%
-    dplyr::group_by(.data[[condition]], row_attribute) %>%
-    dplyr::summarise(mean_val = mean(value)) %>%
-    dplyr::ungroup()
+    dplyr::select(c(condition, sample_name_col))  
   
-  tidyr::pivot_wider(summarised, names_from = condition, values_from = mean_val)  
-} 
+  n_samples <- dplyr::count(selected_samples)
+  
+  selected_data <- dplyr::inner_join(selected_samples, tibble_dataset)
+  
+  if(n_samples < 2 | length(unique(pull(selected_data, sample_name_col))) < 2) {
+    stop("only found 1 selected variable to plot on scatter")
+  }
+  # whether to group and summarise
+  if(n_samples > 2) {
+    selected_data <- selected_data %>%
+      dplyr::group_by(.data[[condition]], row_attribute) %>%
+      dplyr::summarise(mean_val = mean(value)) %>%
+      dplyr::ungroup()
+    
+    return(tidyr::pivot_wider(selected_data, names_from = condition, values_from = mean_val))
+  }
+  # returned if n_samples == 2
+  tidyr::pivot_wider(selected_data, names_from = condition, values_from = value)
+}
