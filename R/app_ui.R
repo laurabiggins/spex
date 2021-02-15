@@ -75,31 +75,63 @@ app_ui <- function(request) {
         tabPanel(
           "metadata",
           br(),
-          sidebarLayout(
-            sidebarPanel(
-              width = 3,
-              checkboxInput("show_meta", "show all metadata", value = TRUE),
-                # checkboxInput("show_meta_summary", "show metadata summary"),
-                # conditionalPanel(condition = "input.show_meta_summary == 1",
-                #                  selectInput("selected_condition", 
-                #                              "select condition",
-                #                              #choices = meta_sum)
-                #                              choices = names(meta_sum)),
-                # ),
-              actionButton("browser", "browser")
-            ),
-            mainPanel(
-              width = 9,
-              conditionalPanel(
-                condition = "input.show_meta_summary == 1",
-                tableOutput("meta_summary")
-              ),
-              conditionalPanel(
-                condition = "input.show_meta == 1", 
-                DT::dataTableOutput("meta_table")
+          fluidRow(
+            column(
+              width = 6,
+              wellPanel(
+                h3("Dataset summary", align = "center", style="margin: 10px;"),
+                textOutput("meta_info1"),
+                textOutput("meta_info2"),
+                h6("Number of categories in each variable:"),
+                tableOutput("meta_info3"),
+                checkboxInput("show_meta_summary", "show more information on variables"),
+                conditionalPanel(
+                  condition = "input.show_meta_summary == 1",
+                  fluidRow(
+                    column(
+                      width = 6,
+                      selectInput(
+                        "selected_condition",
+                        "select condition",
+                        choices = names(meta_sum)
+                      ),
+                    ),
+                    column(width = 6, tableOutput("meta_summary"))
+                  )
+                ),
+                checkboxInput("show_meta", "show all metadata"),
+                conditionalPanel(
+                  condition = "input.show_meta == 1",
+                  DT::dataTableOutput("meta_table")
+                ),
+                actionButton("browser", "browser")
               )
-            )
-          )
+            ),
+            column(
+              width = 6,
+              wellPanel(
+                h3("Sets of interest", align = "center", style="margin: 10px;"),
+                textOutput("set_info1"),
+                #strong("To add a set, use the filter tab."),
+                checkboxInput("show_sets", "show sets"),
+                conditionalPanel(
+                  condition = "input.show_sets == 1",
+                  fluidRow(
+                    column(
+                      width = 6,
+                      selectInput(
+                        "selected_set",
+                        "select set",
+                        choices = names(of_interest)
+                      ),
+                      h6(textOutput("number_in_set"))
+                    ),
+                    column(width = 6, tableOutput("set_summary"))
+                  )
+                )
+              )
+            )  
+          )  
         ),
         tabPanel(
           "data",

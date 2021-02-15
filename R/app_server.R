@@ -13,12 +13,58 @@ app_server <- function( input, output, session ) {
   of_interest <- golem::get_golem_options("of_interest")
   #thematic::thematic_on(bg = "#1d305f", fg = "white")
   
+  # Data tab - the main dataset
+  output$data_table <- DT::renderDataTable(
+    dt_setup(filtered_dataset(), n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
+  )
+  
+  
+  # Filter tab
   lapply(meta_sum, function(x) {
     prependTab(
       inputId = "nav_name", 
       select = TRUE,
       mod_filter_panel_ui(id = names(x)[1], meta_field = x[[1]]))
   })
+  
+  
+  output$meta_info1 <- renderText({
+    paste0("The dataset contains ", nrow(meta_sum[[sample_names]]), " samples.")
+  })
+  
+  output$meta_info2 <- renderText({
+    paste0("Variables are: ", 
+           paste0(names(meta_sum)[!names(meta_sum) %in% sample_names], collapse = ", "),
+           "."
+    )
+  })
+  
+  output$meta_info3 <- renderTable({
+    tibble::enframe(sapply(meta_sum, nrow))
+  }, colnames = FALSE)
+  
+  output$set_info1 <- renderText({
+    n_sets <- length(of_interest)
+    if(n_sets == 1) text <- " set available"
+    else text <- " sets available"
+    paste0(n_sets, text, ". To add more, use the fiter tab.")
+  })  
+  
+  output$number_in_set <- renderText({
+    req(input$selected_set)
+    req(of_interest)
+    paste0(
+      nrow(of_interest[[input$selected_set]]),
+      " items in set."
+    )
+  })
+  
+  output$set_summary <- renderTable({
+    req(input$selected_set)
+    req(of_interest)
+    of_interest[[input$selected_set]]
+  })
+  
   
   filtered_dataset <- reactiveVal(dataset)
   
@@ -32,9 +78,7 @@ app_server <- function( input, output, session ) {
     meta_sum[[input$selected_condition]]
   })
   
-  output$data_table <- DT::renderDataTable(
-    dt_setup(filtered_dataset(), n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
-  )
+
 
   mod_histogramServer("hist")
   
@@ -44,11 +88,13 @@ app_server <- function( input, output, session ) {
   mod_scatterplot_server("scatter", filtered_dataset(), meta_sum, metadata, 
                          sample_name_col = sample_names, of_interest = of_interest)
   
-  mod_violinplot_server("violinplot", filtered_dataset(), meta_sum, metadata, sample_name_col = sample_names)
+  mod_violinplot_server("violinplot", filtered_dataset(), meta_sum, metadata, 
+                        sample_name_col = sample_names)
   
-  mod_boxplot_server("boxplot", filtered_dataset(), meta_sum, metadata, sample_name_col = sample_names)
+  mod_boxplot_server("boxplot", filtered_dataset(), meta_sum, metadata, 
+                     sample_name_col = sample_names)
   
- # observeEvent(input$browser, browser())
+  observeEvent(input$browser, browser())
   
   observeEvent(input$filter_button, {
     select_factors <- paste0(input$nav_name, "-", "include_factors")
