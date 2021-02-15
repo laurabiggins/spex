@@ -38,9 +38,13 @@ app_server <- function( input, output, session ) {
 
   mod_histogramServer("hist")
   
-  mod_heatmap_server("heatmap", filtered_dataset(), meta_sum, metadata, sample_name_col = sample_names, of_interest = of_interest)
+  mod_heatmap_server("heatmap", filtered_dataset(), meta_sum, metadata, 
+                     sample_name_col = sample_names, of_interest = of_interest)
   
-  mod_scatterplot_server("scatter", filtered_dataset(), meta_sum, metadata, sample_name_col = sample_names, of_interest = of_interest)
+  mod_scatterplot_server("scatter", filtered_dataset(), meta_sum, metadata, 
+                         sample_name_col = sample_names, of_interest = of_interest)
+  
+  mod_violinplot_server("violinplot", filtered_dataset(), meta_sum, metadata, sample_name_col = sample_names)
   
   mod_boxplot_server("boxplot", filtered_dataset(), meta_sum, metadata, sample_name_col = sample_names)
   

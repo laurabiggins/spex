@@ -113,6 +113,7 @@ app_ui <- function(request) {
             tabPanel("histogram", mod_histogramUI("hist")),
             tabPanel("scatterplot", mod_scatterplot_ui("scatter", samples, meta_sum)),
             tabPanel("heatmap", mod_heatmap_ui("heatmap", samples, meta_sum)),
+            tabPanel("violinplot", mod_violinplot_ui("violinplot", samples, meta_sum)),
             tabPanel("boxplot", mod_boxplot_ui("boxplot", samples, meta_sum)),
             widths = c(3,9)
           )
