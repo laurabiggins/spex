@@ -84,9 +84,17 @@ mod_heatmap_server <- function(id, dataset, meta_sum, metadata, of_interest,
     function(input, output, session) {
       
       heatmap_options <- reactiveValues(
-        annot_col = tibble::column_to_rownames(metadata, "sample_name"),
-        annot_row = tibble::column_to_rownames(of_interest[[1]], "gene")
+        annot_col = tibble::column_to_rownames(metadata, "sample_name")#,
+        #annot_row = tibble::column_to_rownames(of_interest[[1]], "gene")
       )
+      
+      # row_annotations <- reactive({
+      #   tib <- dplyr::filter(
+      #     of_interest[[1]], 
+      #     gene %in% rownames(selected_data())
+      #   )
+      #   tibble::column_to_rownames(tib, "gene")
+      # })
       
       # this has to be in a reactive expression because the dataset 
       # passed to mod_heatmap_server is a reactive expression
@@ -105,7 +113,7 @@ mod_heatmap_server <- function(id, dataset, meta_sum, metadata, of_interest,
           selected_data(),
           scale = "row",
           annotation_col = heatmap_options$annot_col,
-          annotation_row = heatmap_options$annot_row,
+          #annotation_row = row_annotations(),
           silent = TRUE
         )
       })
