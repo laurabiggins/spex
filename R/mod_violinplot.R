@@ -84,7 +84,7 @@ violinplot <- function(dataset, condition, boxplot = FALSE) {
     ggplot2::geom_violin(fill = "#70b5aa")
   
   if(boxplot){
-    p <- p + geom_boxplot(width=0.1, fill = "#92d1c7")
+    p <- p + ggplot2::geom_boxplot(width=0.1, fill = "#92d1c7")
   }
   p
 }
