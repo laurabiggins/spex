@@ -22,7 +22,7 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
           selectInput(
             inputId = ns("select_condition"),
             label = "select variable",
-            choices = names(meta_sum)
+            choices = sort(names(meta_sum))
           ),
           selectInput(
             ns("x_axis_multi"), 

@@ -26,7 +26,7 @@ mod_violinplot_ui <- function(id, individual_samples, meta_sum){
               selectInput(
                 inputId = ns("select_condition"),
                 label = "",
-                choices = names(meta_sum),
+                choices = sort(names(meta_sum)),
               ),
               br(),
               checkboxInput(ns("add_boxplot"), "show boxplot"),
