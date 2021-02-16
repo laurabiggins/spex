@@ -50,14 +50,9 @@ app_server <- function( input, output, session ) {
     paste0(n_sets, text, ". To add more, use the fiter tab.")
   })  
   
-  output$number_in_set <- renderText({
-    req(input$selected_set)
-    req(of_interest)
-    paste0(
-      nrow(of_interest[[input$selected_set]]),
-      " items in set."
-    )
-  })
+  output$set_info2 <- renderTable({
+    tibble::enframe(sapply(of_interest, nrow))
+  }, colnames = FALSE)
   
   output$set_summary <- renderTable({
     req(input$selected_set)

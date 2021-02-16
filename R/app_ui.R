@@ -112,8 +112,9 @@ app_ui <- function(request) {
               wellPanel(
                 h3("Sets of interest", align = "center", style="margin: 10px;"),
                 textOutput("set_info1"),
-                #strong("To add a set, use the filter tab."),
-                checkboxInput("show_sets", "show sets"),
+                h6("Number in each set:"),
+                tableOutput("set_info2"),
+                checkboxInput("show_sets", "show items in set"),
                 conditionalPanel(
                   condition = "input.show_sets == 1",
                   fluidRow(
@@ -123,8 +124,7 @@ app_ui <- function(request) {
                         "selected_set",
                         "select set",
                         choices = names(of_interest)
-                      ),
-                      h6(textOutput("number_in_set"))
+                      )
                     ),
                     column(width = 6, tableOutput("set_summary"))
                   )
