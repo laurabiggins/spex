@@ -38,7 +38,7 @@ mod_histogramUI <- function(id, meta_sum){
         ),
         mainPanel(
           width = 9,
-          plotOutput(ns("plot"), height = 600)
+          plotOutput(ns("plot"), height = 500)
         ) 
       )  
     )  
