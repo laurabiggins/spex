@@ -26,6 +26,7 @@ usethis::use_package("shinyWidgets")
 usethis::use_package("shinycssloaders")
 usethis::use_package("bslib")
 usethis::use_package("pheatmap")
+usethis::use_package("grDevices")
 
 ## Add modules ----
 ## Create a module infrastructure in R/

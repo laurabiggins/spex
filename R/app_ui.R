@@ -142,7 +142,7 @@ app_ui <- function(request) {
           "plot",
           navlistPanel(
             "plot type",
-            tabPanel("histogram", mod_histogramUI("hist")),
+            tabPanel("histogram", mod_histogramUI("hist", meta_sum)),
             tabPanel("scatterplot", mod_scatterplot_ui("scatter", samples, meta_sum)),
             tabPanel("heatmap", mod_heatmap_ui("heatmap", samples, meta_sum)),
             tabPanel("violinplot", mod_violinplot_ui("violinplot", samples, meta_sum)),

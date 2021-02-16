@@ -75,7 +75,7 @@ app_server <- function( input, output, session ) {
   
 
 
-  mod_histogramServer("hist")
+  mod_histogramServer("hist", filtered_dataset(), metadata, sample_name_col = sample_names)
   
   mod_heatmap_server("heatmap", filtered_dataset(), meta_sum, metadata, 
                      sample_name_col = sample_names, of_interest = of_interest)
