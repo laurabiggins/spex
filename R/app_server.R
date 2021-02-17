@@ -8,11 +8,11 @@ app_server <- function( input, output, session ) {
   
   dataset <- golem::get_golem_options("dataset")
   
-  #metadata <- golem::get_golem_options("metadata")
-  meta_sum <- get_condition_summary(metadata) 
-  #sample_names <- golem::get_golem_options("sample_names")
-  #of_interest <- golem::get_golem_options("of_interest")
-  #measure_names <- rownames(golem::get_golem_options("dataset"))
+  metadata <- golem::get_golem_options("metadata")
+  meta_sum <- get_condition_summary(metadata)
+  sample_names <- golem::get_golem_options("sample_names")
+  of_interest <- golem::get_golem_options("of_interest")
+  measure_names <- rownames(golem::get_golem_options("dataset"))
   #thematic::thematic_on(bg = "#1d305f", fg = "white")
   
   measures_of_interest <- reactiveVal(of_interest)

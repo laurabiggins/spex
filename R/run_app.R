@@ -13,7 +13,12 @@ run_app <- function(
     app = shinyApp(
       ui = app_ui, 
       server = app_server
-    ), 
+    ),
+    # this doesn't seem to help but I'll keep it in for reference
+    # golem_opts = list(metadata = qs::qread("inst/extdata/metaFem_edited.rds"),
+    #                   dataset  = qs::qread("inst/extdata/femExpression2.rds"),
+    #                   of_interest = qs::qread("inst/extdata/of_interest2.rds"),
+    #                   sample_names = "sample_name")
     golem_opts = list(metadata = readRDS("inst/extdata/metaFem_edited.rds"),
                       dataset  = readRDS("inst/extdata/femExpression2.rds"),
                       of_interest = readRDS("inst/extdata/of_interest2.rds"),

@@ -49,10 +49,6 @@ mod_histogramUI <- function(id, meta_sum){
 #' histogram Server Function
 #'
 #' @noRd 
-# mod_histogram_server <- function(input, output, session){
-#   ns <- session$ns
-#  
-# }
 mod_histogramServer <- function(id, dataset, metadata, sample_name_col, prefix = "") {
   moduleServer(
     id,
