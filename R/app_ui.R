@@ -11,6 +11,7 @@
 
 app_ui <- function(request) {
   
+  
   metadata <- golem::get_golem_options("metadata")
   #of_interest <- golem::get_golem_options("of_interest")
   meta_sum <- get_condition_summary(metadata)
@@ -26,6 +27,7 @@ app_ui <- function(request) {
     golem_add_external_resources(),
     # List the first level UI elements here 
     fluidPage(
+      shinyFeedback::useShinyFeedback(),
       theme = bslib::bs_theme(
         bg = bab_dark_blue, 
         fg = "white", 
@@ -163,8 +165,7 @@ app_ui <- function(request) {
             id = "nav_name",
             well = FALSE,
             widths = c(3,9), 
-              tabPanel("filter_by_name", mod_name_filter_ui("name_filter")), #measure_names)
-              tabPanel("boxplot", mod_boxplot_ui("boxplot", samples, meta_sum))
+              tabPanel("filter_by_name", mod_name_filter_ui("name_filter")) #measure_names)
           ),
           wellPanel(
             fluidRow(
