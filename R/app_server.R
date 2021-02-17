@@ -6,12 +6,16 @@
 #' @noRd
 app_server <- function( input, output, session ) {
   
-  metadata <- golem::get_golem_options("metadata")
-  meta_sum <- get_condition_summary(metadata) 
   dataset <- golem::get_golem_options("dataset")
-  sample_names <- golem::get_golem_options("sample_names")
-  of_interest <- golem::get_golem_options("of_interest")
+  
+  #metadata <- golem::get_golem_options("metadata")
+  meta_sum <- get_condition_summary(metadata) 
+  #sample_names <- golem::get_golem_options("sample_names")
+  #of_interest <- golem::get_golem_options("of_interest")
+  #measure_names <- rownames(golem::get_golem_options("dataset"))
   #thematic::thematic_on(bg = "#1d305f", fg = "white")
+  
+  measures_of_interest <- reactiveVal(of_interest)
   
   # Data tab - the main dataset
   output$data_table <- DT::renderDataTable(
@@ -21,9 +25,10 @@ app_server <- function( input, output, session ) {
   
   # Filter tab
   lapply(meta_sum, function(x) {
-    prependTab(
+    #prependTab(
+    appendTab(
       inputId = "nav_name", 
-      select = TRUE,
+      #select = TRUE,
       mod_filter_panel_ui(id = names(x)[1], meta_field = x[[1]]))
   })
   
@@ -44,20 +49,20 @@ app_server <- function( input, output, session ) {
   }, colnames = FALSE)
   
   output$set_info1 <- renderText({
-    n_sets <- length(of_interest)
+    n_sets <- length(measures_of_interest())
     if(n_sets == 1) text <- " set available"
     else text <- " sets available"
-    paste0(n_sets, text, ". To add more, use the fiter tab.")
+    paste0(n_sets, text, ". To add more, use the filter tab.")
   })  
   
   output$set_info2 <- renderTable({
-    tibble::enframe(sapply(of_interest, nrow))
+    tibble::enframe(sapply(measures_of_interest(), nrow))
   }, colnames = FALSE)
   
   output$set_summary <- renderTable({
     req(input$selected_set)
-    req(of_interest)
-    of_interest[[input$selected_set]]
+    req(measures_of_interest())
+    measures_of_interest()[[input$selected_set]]
   })
   
   
@@ -89,19 +94,31 @@ app_server <- function( input, output, session ) {
   mod_boxplot_server("boxplot", filtered_dataset(), meta_sum, metadata, 
                      sample_name_col = sample_names)
   
+  filter_results <- mod_name_filter_server("name_filter", measure_names, of_interest)
+  
+  observeEvent(filter_results(), {
+    
+    measures_of_interest(filter_results())
+    print("filter results updated")
+    updateSelectInput(inputId = "selected_set", choices = names(measures_of_interest()))
+  })
+  
   observeEvent(input$browser, browser())
   
   observeEvent(input$filter_button, {
-    select_factors <- paste0(input$nav_name, "-", "include_factors")
-    filtered_meta <- dplyr::filter(
-      metadata, 
-      .data[[input$nav_name]] %in% input[[select_factors]]
-    )
-    selected_samples <- dplyr::pull(filtered_meta, sample_names)
-    # we're working with a matrix so can't do dplyr
-    matrix_columns <- colnames(filtered_dataset()) %in% selected_samples
-    filt <- filtered_dataset()[, matrix_columns]
-    filtered_dataset(filt) # set reactiveVal
+    
+    print(filter_results())
+    
+    # select_factors <- paste0(input$nav_name, "-", "include_factors")
+    # filtered_meta <- dplyr::filter(
+    #   metadata, 
+    #   .data[[input$nav_name]] %in% input[[select_factors]]
+    # )
+    # selected_samples <- dplyr::pull(filtered_meta, sample_names)
+    # # we're working with a matrix so can't do dplyr
+    # matrix_columns <- colnames(filtered_dataset()) %in% selected_samples
+    # filt <- filtered_dataset()[, matrix_columns]
+    # filtered_dataset(filt) # set reactiveVal
     
   })
   

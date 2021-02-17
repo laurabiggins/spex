@@ -12,9 +12,10 @@
 app_ui <- function(request) {
   
   metadata <- golem::get_golem_options("metadata")
-  of_interest <- golem::get_golem_options("of_interest")
+  #of_interest <- golem::get_golem_options("of_interest")
   meta_sum <- get_condition_summary(metadata)
   samples <- get_all_sample_names(metadata)
+  #measure_names <- rownames(golem::get_golem_options("dataset"))
   bab_light_blue <- "#00aeef"
   bab_dark_blue <- "#1d305f"
   #thematic::thematic_on(bg = "#1d305f", fg = "white")
@@ -136,7 +137,7 @@ app_ui <- function(request) {
         tabPanel(
           "data",
           br(),
-          DT::dataTableOutput("data_table")
+          wellPanel(DT::dataTableOutput("data_table"))
         ),
         tabPanel(
           "plot",
@@ -146,7 +147,7 @@ app_ui <- function(request) {
             tabPanel("scatterplot", mod_scatterplot_ui("scatter", samples, meta_sum)),
             tabPanel("heatmap", mod_heatmap_ui("heatmap", samples, meta_sum)),
             tabPanel("violinplot", mod_violinplot_ui("violinplot", samples, meta_sum)),
-            tabPanel("boxplot", mod_boxplot_ui("boxplot", samples, meta_sum)),
+            #tabPanel("boxplot", mod_boxplot_ui("boxplot", samples, meta_sum)),
             widths = c(3,9)
           )
         ),
@@ -161,7 +162,9 @@ app_ui <- function(request) {
           navlistPanel(
             id = "nav_name",
             well = FALSE,
-            widths = c(3,9)
+            widths = c(3,9), 
+              tabPanel("filter_by_name", mod_name_filter_ui("name_filter")), #measure_names)
+              tabPanel("boxplot", mod_boxplot_ui("boxplot", samples, meta_sum))
           ),
           wellPanel(
             fluidRow(
