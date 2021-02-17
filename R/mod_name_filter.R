@@ -79,14 +79,20 @@ mod_name_filter_server <- function(id, measure_names, of_interest){
     
     observeEvent(input$add_names, {
       
+      shinyFeedback::feedbackWarning(
+        "add_set_msg", 
+        !isTruthy(matched_names()), 
+        "Cannot add set with no matched names"
+      )
+      
       req(matched_names())
       
-      # if(nchar(input$set_name) >= 1){
-        this_set_name <- input$set_name
-      # } else {
-      #   this_set_name <- paste0("set_", length(of_interest)+1)
-      # }
-      #of_interest[[this_set_name]] = matched_names()
+      if(nchar(input$set_name) >= 1){
+       this_set_name <- input$set_name
+      } else {
+        this_set_name <- paste0("set_", length(of_interest)+1)
+      }
+     
       sets <- sets_of_interest()
       sets[[this_set_name]] = tibble::tibble(this_set_name = matched_names())
         
@@ -118,8 +124,32 @@ mod_name_filter_server <- function(id, measure_names, of_interest){
     
     output$search_summary <- renderText(search_msg())
     
-    reactive(sets_of_interest())
+    observeEvent(input$search_names, {
     
+      #print("from the observer")
+      
+      n <- isTruthy(input$pasted_names)
+      shinyFeedback::feedbackWarning("pasted_names", !n, "Please enter some names")
+      
+      delim_check <- (!isTruthy(matched_names()) & length(entered_names()) == 1)
+      
+      shinyFeedback::feedbackWarning(
+        "pasted_names", 
+        delim_check, 
+        "No names matched the dataset, do you need to change the delimiter option below?"
+      )
+      
+      next_check <- (!isTruthy(matched_names())) & length(entered_names()) > 1
+      shinyFeedback::feedbackWarning(
+        "pasted_names",
+        next_check,
+        "No names matched the dataset, make sure the separator option is set correctly
+        below.
+        Select from the set of names in the dataset by using the dropdown list below."
+      )
+    })
+    
+    reactive(sets_of_interest())
   })
 }
     
@@ -140,7 +170,7 @@ split_names <- function(name_string, delimiter){
     comma = ","
   )
   stringr::str_split(name_string, pattern = delim)[[1]]
-  # remove whitespace
+  #stringr::str_trim(name_string)
 }    
     
 #' Title
@@ -148,15 +178,14 @@ split_names <- function(name_string, delimiter){
 #' @param selected_names names to filter on
 #' @param all_names  all the rownames from the main dataset
 #'
-#' @return
+#' @return vector of names that matched
 #' @export
 #'
 #' @examples
 match_names <- function(selected_names, all_names){
   
   #convert to upper or lower case
-  selected_names[selected_names %in% all_names]
-  
+  selected_names[toupper(selected_names) %in% toupper(all_names)]
 }    
     
     
