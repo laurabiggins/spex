@@ -14,47 +14,62 @@ mod_name_filter_ui <- function(id){#}, measure_names){
   tabPanel(
     id,
     wellPanel(
-      # style = "padding: 10px",
-      fluidRow(
-        column(
-          width = 6,
-          textInput(
-            ns("pasted_names"),
-            label = NULL,
-            width = "400px",
-            placeholder = "Enter names here e.g. gene1, gene2"
+      wellPanel(
+        h5("Enter set of names to search for in the dataset"),
+        # style = "padding: 10px",
+        fluidRow(
+          column(
+            width = 7,
+            textInput(
+              ns("pasted_names"),
+              label = NULL,
+              width = "400px",
+              placeholder = "Enter names here e.g. gene1, gene2"
+            ),
+            textOutput(ns("search_summary")),
+          ),
+          column(
+            width = 2,
+            #style = "border: 10px",
+            radioButtons(
+              ns("name_delimiter"),
+              label = "separator",
+              choices = c("space/tab" = "space", "comma" = "comma")#,
+              #inline = TRUE
+            )
+          ),
+          column(
+            width = 2,
+            actionButton(ns("search_names"), "search")
           )
-        ),
-        column(
-          width = 6,
-          actionButton(ns("search_names"), "search")
-        ),
-        radioButtons(
-          ns("name_delimiter"), 
-          label = "separator", 
-          choices = c("space/tab" = "space", "comma" = "comma"),
-          inline = TRUE
-        )
-      ),  
-      textOutput(ns("search_summary")),
-      br(),
-      fluidRow(
-        column(
-          width = 6,
-          textInput(ns("set_name"), label = NULL, width = "300px", placeholder = "name of set")
-        ),
-        column(
-          width = 6,
-          actionButton(ns("add_names"), label = "Add")
         )
       ),
-      textOutput(ns("add_set_msg")),
-      br(),
-      br(),
-      actionButton(ns("browser"), "browser"),
-      br(),
-      checkboxInput(ns("show_dropdown"), "select from dropdown list")
-    )
+      wellPanel(
+        h5("Add the new set to the sets of interest"),
+        fluidRow(
+          column(
+            width = 6,
+            textInput(
+              ns("set_name"), 
+              label = NULL,
+              width = "300px", 
+              placeholder = "name of set"
+            )
+          ),
+          column(
+            width = 6,
+            actionButton(ns("add_names"), label = "Add")
+          )
+        ),
+        textOutput(ns("add_set_msg")),
+        p("To view set information, go to the metadata tab"),
+        br(),
+        br(),
+        actionButton(ns("browser"), "browser"),
+        br(),
+        checkboxInput(ns("show_dropdown"), "select from dropdown list")
+      )
+    )  
   )  
 }
 
@@ -62,91 +77,111 @@ mod_name_filter_ui <- function(id){#}, measure_names){
 mod_name_filter_server <- function(id, measure_names, of_interest){
   
   moduleServer(id, function(input, output, session) {
-      
+    
+    ns <- session$ns 
+     
+    shinyjs::disable("add_names")
+    shinyjs::disable("set_name")
+    
     observeEvent(input$browser, browser())
     
     sets_of_interest <- reactiveVal(of_interest)
     
+    set_msg <- reactiveVal()
+    
+    
     entered_names <- eventReactive(input$search_names, {
-      
       split_names(input$pasted_names, input$name_delimiter)
     })
     
     matched_names <- reactive({
-      
       match_names(entered_names(), measure_names)
     })
-    
-    observeEvent(input$add_names, {
-      
-      shinyFeedback::feedbackWarning(
-        "add_set_msg", 
-        !isTruthy(matched_names()), 
-        "Cannot add set with no matched names"
-      )
-      
-      req(matched_names())
-      
-      if(nchar(input$set_name) >= 1){
-       this_set_name <- input$set_name
-      } else {
-        this_set_name <- paste0("set_", length(of_interest)+1)
-      }
-     
-      sets <- sets_of_interest()
-      sets[[this_set_name]] = tibble::tibble(this_set_name = matched_names())
-        
-      sets_of_interest(sets)
-      
-      print("added set")
-      set_msg(paste0("Added set ", input$set_name))
-    })
-    
-    set_msg <- reactiveVal()
-    
-    output$add_set_msg <- renderText(set_msg())
-    
-    
-    # this needs extracting and making robust to display useful messages
+   
     search_msg <- reactive({
-      
       req(entered_names())
       req(matched_names())
-      
       paste0(
         length(entered_names()), 
         " names entered, ", 
         length(matched_names()),
         " of these were found in the dataset"
       )
-      
     })
     
     output$search_summary <- renderText(search_msg())
     
+    output$add_set_msg <- renderText(set_msg())
+
+        
     observeEvent(input$search_names, {
     
-      #print("from the observer")
+      shinyFeedback::hideFeedback("pasted_names")
+      shinyjs::disable("add_names")
+      shinyjs::disable("set_name")
       
-      n <- isTruthy(input$pasted_names)
-      shinyFeedback::feedbackWarning("pasted_names", !n, "Please enter some names")
+      # some guesses for what may be wrong
+      any_names <- isTruthy(input$pasted_names)
+      delim_invalid <- (!isTruthy(matched_names()) & length(entered_names()) == 1)
+      no_matches <- (!isTruthy(matched_names())) & length(entered_names()) > 1
       
-      delim_check <- (!isTruthy(matched_names()) & length(entered_names()) == 1)
+      if(!any_names){ 
+        print("not any names")
+        shinyFeedback::feedbackWarning("pasted_names", !any_names, "Please enter some names")
+      } else if (delim_invalid) {
+        shinyFeedback::feedbackWarning(
+          "pasted_names",
+          delim_invalid,
+          "No names matched the dataset, do you need to change the delimiter option below?"
+        )
+      } else if (no_matches) {
+        shinyFeedback::feedbackWarning(
+          "pasted_names",
+          no_matches,
+          "No names matched the dataset, make sure the separator option is set correctly
+          below.
+          Select from the set of names in the dataset by using the dropdown list below."
+        )
+      } else if (isTruthy(search_msg())){
+        shinyjs::enable("add_names")
+        shinyjs::enable("set_name")
+      }
+    })
+
+    observeEvent(input$add_names, {
       
-      shinyFeedback::feedbackWarning(
-        "pasted_names", 
-        delim_check, 
-        "No names matched the dataset, do you need to change the delimiter option below?"
+      req(matched_names())
+      sets <- sets_of_interest()
+      
+      if(input$set_name %in% names(sets)){
+        showModal(modal_confirm)
+      } else {
+        new_sets <- add_set(sets_of_interest(), input$set_name,  matched_names())
+        sets_of_interest(new_sets)
+        set_msg(paste0("Added set ", input$set_name, ". "))
+      }  
+    })
+
+    modal_confirm <- modalDialog(
+      "You already have a set with this name. Are you sure you want to overwrite it?",
+      title = "Overwriting set",
+      footer = tagList(
+        actionButton(ns("cancel"), "Cancel"),
+        actionButton(ns("ok"), "Overwrite", class = "btn btn-danger")
       )
-      
-      next_check <- (!isTruthy(matched_names())) & length(entered_names()) > 1
-      shinyFeedback::feedbackWarning(
-        "pasted_names",
-        next_check,
-        "No names matched the dataset, make sure the separator option is set correctly
-        below.
-        Select from the set of names in the dataset by using the dropdown list below."
-      )
+    )
+    
+    observeEvent(input$ok, {
+      showNotification("Overwriting set")
+      removeModal()
+      new_sets <- add_set(sets_of_interest(), input$set_name,  matched_names())
+      sets_of_interest(new_sets)
+      set_msg(paste0("Added ", input$set_name, "."))
+    })
+    
+    observeEvent(input$cancel, {
+      print("running cancel option")
+      removeModal()
     })
     
     reactive(sets_of_interest())
@@ -188,7 +223,31 @@ match_names <- function(selected_names, all_names){
   selected_names[toupper(selected_names) %in% toupper(all_names)]
 }    
     
+
+#' get_set_name
+#' 
+#' Checks whether the name is empty and if so, 
+#'
+#' @param set_name 
+#' @param n_sets 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+get_set_name <- function(set_name, n_sets){
+  
+  if(nchar(set_name) >= 1){
+    return(set_name)
+  } else {
+    return(paste0("set_", n_sets + 1))
+  }
+}    
     
-    
-    
+add_set <- function(sets, new_set_name, new_set){
+  
+  this_set_name <- get_set_name(new_set_name, length(sets))
+  sets[[this_set_name]] = tibble::tibble(this_set_name = new_set)
+  sets
+}    
     

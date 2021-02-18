@@ -30,6 +30,7 @@ usethis::use_package("grDevices")
 #usethis::use_package("qs")
 usethis::use_package("shinyFeedback")
 usethis::use_package("stringr")
+usethis::use_package("shinyjs")
 
 ## Add modules ----
 ## Create a module infrastructure in R/
