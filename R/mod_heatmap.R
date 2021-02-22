@@ -33,46 +33,30 @@ mod_heatmap_ui <- function(id, individual_samples, meta_sum){
         plotOutput(ns("plot"), width = "100%", height = "500"), 
         image = "bioinf1.gif", 
         image.width = 100
-      ),
-     #plotOutput(ns("plot"), height = "500px"),
+      )
     ),
     br(),
 
     br(),
     br(),
-    actionButton(inputId = ns("browser"), "browser")#, 
+    actionButton(inputId = ns("browser"), "browser"), 
     
-    # if we want the downloaded plot to be the window size
-    # tags$script("
-    #             var myWidth = 0;
-    #             $(document).on('shiny:connected', function(event) {
-    #               myWidth = $(window).width();
-    #               Shiny.onInputChange('heatmap-shiny_width', myWidth);
-    #             });
-    #             $(window).resize(function(event) {
-    #                myWidth = $(window).width();
-    #                Shiny.onInputChange('heatmap-shiny_width', myWidth);
-    #             });
-    #           "),
-    # tags$script("
-    #             var myHeight = 0;
-    #             $(document).on('shiny:connected', function(event) {
-    #               myHeight = $(window).height();
-    #               Shiny.onInputChange('heatmap-shiny_height', myHeight);
-    #             });
-    #             $(window).resize(function(event) {
-    #                myHeight = $(window).height();
-    #                Shiny.onInputChange('heatmap-shiny_height', myHeight);
-    #             });
-    #             ")
+    #if we want the downloaded plot to be the window size
+    # for height we make the user adjust it, as it won't resize with the window
+    tags$script("
+                var myWidth = 0;
+                $(document).on('shiny:connected', function(event) {
+                  myWidth = $(window).width();
+                  Shiny.onInputChange('heatmap-shiny_width', myWidth);
+                });
+                $(window).resize(function(event) {
+                   myWidth = $(window).width();
+                   Shiny.onInputChange('heatmap-shiny_width', myWidth);
+                });
+              ")
   )
 }
 
-    # "$(document).on('shiny:connected', function(event) {
-    #   var myHeight = $(window).height();
-    #   Shiny.onInputChange('heatmap-shiny_height', myHeight)
-    #   
-    # });
 
 #' histogram Server Function
 #'
@@ -122,13 +106,10 @@ mod_heatmap_server <- function(id, dataset, meta_sum, metadata, of_interest,
         
         req(input$plot_height)
         req(!is.na(input$plot_height))
-        #req(input$plot_width)
-        #req(!is.na(input$plot_width))
 
         plot(heatmap_obj()$gtable)
       }, 
-      height = function(x) input$plot_height#, 
-      #width = function(x) input$plot_width
+      height = function(x) input$plot_height
       )
         
       output$download_png <- downloadHandler(
@@ -138,11 +119,11 @@ mod_heatmap_server <- function(id, dataset, meta_sum, metadata, of_interest,
         content = function(file) {
           ggplot2::ggsave(
             file, 
-            heatmap_obj(), 
+            heatmap_obj()$gtable, 
             device = "png",
-            #width = input$shiny_width/4, ## 1pixel ~ 0.26mm at 96 dpi. it's ~0.35 at 72dpi
+            width = input$shiny_width/4, ## 1pixel ~ 0.26mm at 96 dpi. it's ~0.35 at 72dpi
             #height = input$shiny_height/4,
-            width = input$plot_width*0.35,
+            #width = input$plot_width*0.35,
             height = input$plot_height*0.35,  
             units = "mm"
           )
@@ -158,7 +139,8 @@ mod_heatmap_server <- function(id, dataset, meta_sum, metadata, of_interest,
             file, 
             heatmap_obj(), 
             device = "pdf",
-            width = input$plot_width*0.35,
+            width = input$shiny_width/4,
+            #width = input$plot_width*0.35,
             height = input$plot_height*0.35,  
             units = "mm"
           )
