@@ -16,7 +16,7 @@ app_ui <- function(request) {
   #of_interest <- golem::get_golem_options("of_interest")
   meta_sum <- get_condition_summary(metadata)
   samples <- get_all_sample_names(metadata)
-  #measure_names <- rownames(golem::get_golem_options("dataset"))
+  measure_names <- rownames(golem::get_golem_options("dataset"))
   bab_light_blue <- "#00aeef"
   bab_dark_blue <- "#1d305f"
   #thematic::thematic_on(bg = "#1d305f", fg = "white")
@@ -28,6 +28,7 @@ app_ui <- function(request) {
     # List the first level UI elements here 
     fluidPage(
       shinyFeedback::useShinyFeedback(),
+      shinyjs::useShinyjs(),
       theme = bslib::bs_theme(
         bg = bab_dark_blue, 
         fg = "white", 
@@ -46,6 +47,7 @@ app_ui <- function(request) {
       br(),
       #titlePanel("Dataset title"),
       tabsetPanel(
+        id = "main_panels",
         tabPanel(
           "info",
           br(),
@@ -155,33 +157,8 @@ app_ui <- function(request) {
         ),
         tabPanel(
           "filter",
-          wellPanel(
-            style = "margin: 10px 0px",
-            h3("Filter summary: "),
-            textOutput("filter_summary"),
-            actionButton("browser", "browser")
-          ),
-          navlistPanel(
-            id = "nav_name",
-            well = FALSE,
-            widths = c(3,9), 
-              tabPanel("filter_by_name", mod_name_filter_ui("name_filter")) #measure_names)
-          ),
-          wellPanel(
-            fluidRow(
-              column(
-                width = 4, 
-                offset = 2,
-                align = "center",
-                actionButton("filter_button", "Filter data")
-              ),
-              column(
-                width = 4,
-                align = "center",
-                actionButton("clear_filters", "Clear all filters")
-              )  
-            )
-          )
+          br(),
+          mod_name_filter_ui("name_filter", measure_names)
         )
       ),
       br(),
