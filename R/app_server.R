@@ -23,15 +23,13 @@ app_server <- function( input, output, session ) {
   )
   
   
-  # Filter tab
-  lapply(meta_sum, function(x) {
-    #prependTab(
-    appendTab(
-      inputId = "nav_name", 
-      #select = TRUE,
-      mod_filter_panel_ui(id = names(x)[1], meta_field = x[[1]]))
-  })
-  
+  # Filter tab to filter by condition. Commenting this out for now, but may want 
+  # to reinstate at some point
+  # lapply(meta_sum, function(x) {
+  #   appendTab(
+  #     inputId = "nav_name", 
+  #     mod_filter_panel_ui(id = names(x)[1], meta_field = x[[1]]))
+  # })
   
   output$meta_info1 <- renderText({
     paste0("The dataset contains ", nrow(meta_sum[[sample_names]]), " samples.")
