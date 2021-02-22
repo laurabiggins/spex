@@ -48,28 +48,31 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
         )
       ),
       checkboxInput(ns("highlight_genes"), label = "highlight measure of interest"),
-      checkboxInput(inputId = "highlight_panel", label = "show highlight options"),
-      conditionalPanel(
-        condition = "input.highlight_panel == 1",
-        wellPanel(
-          shinyWidgets::pickerInput(
-            inputId = ns("measure_selector"),
-            label = "Select measure",
-            choices = "",
-            multiple = TRUE,
-            options = shinyWidgets::pickerOptions(
-              actionsBox = TRUE,
-              liveSearch = TRUE, 
-              selectedTextFormat = "count > 10"
-            )
-          ),
-          actionButton(inputId = ns("highlight_button"), "highlight on plot"),
-          checkboxInput(inputId = ns("label_highlights"), label = "show labels")
-        )
-      )  
+      checkboxInput(inputId = ns("label_highlights"), label = "show labels")
     )
   )
 }
+      # checkboxInput(inputId = "highlight_panel", label = "show highlight options"),
+      # conditionalPanel(
+      #   condition = "input.highlight_panel == 1",
+      #   wellPanel(
+      #     shinyWidgets::pickerInput(
+      #       inputId = ns("measure_selector"),
+      #       label = "Select measure",
+      #       choices = "",
+      #       multiple = TRUE,
+      #       options = shinyWidgets::pickerOptions(
+      #         actionsBox = TRUE,
+      #         liveSearch = TRUE, 
+      #         selectedTextFormat = "count > 10"
+      #       )
+      #     ),
+      #     actionButton(inputId = ns("highlight_button"), "highlight on plot"),
+      #   )
+      #)  
+#     )
+#   )
+# }
 
 #' scatterplot server function
 #' 
@@ -120,7 +123,6 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
         session,
         inputId = "measure_selector",
         choices = rv$selected_data$row_attribute)
-      
     })
     
     observeEvent(input$highlight_genes, {
@@ -239,7 +241,7 @@ scatter <- function(dataset, x_var, y_var, label_subset) {
       data = subset(dataset, custom_colour == "red"),
       ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]], label = row_attribute),
       nudge_x = 1
-      )
+    )
   }
   p
 }
