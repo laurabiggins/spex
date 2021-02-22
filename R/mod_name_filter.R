@@ -7,52 +7,78 @@
 #' @noRd 
 #'
 #' @importFrom shiny NS tagList 
-mod_name_filter_ui <- function(id){#}, measure_names){
+mod_name_filter_ui <- function(id, measure_names){
   
   ns <- NS(id)
-  
-  tabPanel(
-    id,
-    wellPanel(
-      wellPanel(
-        h5("Enter set of names to search for in the dataset"),
-        # style = "padding: 10px",
-        fluidRow(
-          column(
-            width = 7,
+
+  fluidRow(
+    column(
+      width = 7,
+      tabsetPanel(
+        #widths = c(3,9),
+        #well = FALSE,
+        tabPanel(
+          "free text",
+          wellPanel(
+            h5("1. Enter set of names to search for in the dataset"),
+            # style = "padding: 10px",
             textInput(
               ns("pasted_names"),
               label = NULL,
-              width = "400px",
+              width = "500px",
               placeholder = "Enter names here e.g. gene1, gene2"
             ),
-            textOutput(ns("search_summary")),
-          ),
-          column(
-            width = 2,
-            #style = "border: 10px",
-            radioButtons(
-              ns("name_delimiter"),
-              label = "separator",
-              choices = c("space/tab" = "space", "comma" = "comma")#,
-              #inline = TRUE
-            )
-          ),
-          column(
-            width = 2,
-            actionButton(ns("search_names"), "search")
+            fluidRow(
+              column(
+                width = 7,
+                style = "border: 10px",
+                radioButtons(
+                  ns("name_delimiter"),
+                  label = "separator",
+                  choices = c("space/tab" = "space", "comma" = "comma"),
+                  inline = TRUE
+                )
+              ),
+              column(
+                width = 3,
+                actionButton(ns("search_names"), "search")
+              )
+            ),
+            textOutput(ns("search_summary"))
+          )
+        ),
+        tabPanel(
+          "dropdown",
+          wellPanel(
+            h5("1. Search names in dataset"),
+            shinyWidgets::pickerInput(
+              inputId = ns("measure_selector"),
+              label = NULL,
+              choices = measure_names,
+              multiple = TRUE,
+              options = shinyWidgets::pickerOptions(
+                actionsBox = TRUE,
+                liveSearch = TRUE, 
+                selectedTextFormat = "count > 10"
+              )
+            ),
+            actionButton(ns("confirm"), "Confirm selection"),
+            textOutput(ns("dropdown_msg"))
           )
         )
-      ),
+      )
+    ),
+    column(
+      width = 5,  
       wellPanel(
-        h5("Add the new set to the sets of interest"),
+        h5("2. Add the new set to the sets of interest"),
         fluidRow(
           column(
             width = 6,
             textInput(
               ns("set_name"), 
               label = NULL,
-              width = "300px", 
+              width = "400px", 
               placeholder = "name of set"
             )
           ),
@@ -69,7 +95,7 @@ mod_name_filter_ui <- function(id){#}, measure_names){
         br(),
         checkboxInput(ns("show_dropdown"), "select from dropdown list")
       )
-    )  
+    )
   )  
 }
 
@@ -87,26 +113,43 @@ mod_name_filter_server <- function(id, measure_names, of_interest){
     
     sets_of_interest <- reactiveVal(of_interest)
     
+    rv <- reactiveValues()
+    
     set_msg <- reactiveVal()
     
-    
-    entered_names <- eventReactive(input$search_names, {
-      split_names(input$pasted_names, input$name_delimiter)
-    })
-    
     matched_names <- reactive({
-      match_names(entered_names(), measure_names)
+      match_names(rv$entered_names, measure_names)
     })
-   
+    
+    observeEvent(input$confirm, {
+      rv$entered_names <- input$measure_selector
+    })
+    
+    observeEvent(matched_names(), {
+      
+      if(isTruthy(matched_names())){
+        shinyjs::enable("add_names")
+        shinyjs::enable("set_name")
+      } else {
+        shinyjs::disable("add_names")
+        shinyjs::disable("set_name")
+      }
+      
+    })
+    
     search_msg <- reactive({
-      req(entered_names())
+      req(rv$entered_names)
       req(matched_names())
       paste0(
-        length(entered_names()), 
+        length(rv$entered_names), 
         " names entered, ", 
         length(matched_names()),
         " of these were found in the dataset"
       )
+    })
+    
+    output$dropdown_msg <- renderText({
+      paste0(length(matched_names()), " names in set.")
     })
     
     output$search_summary <- renderText(search_msg())
@@ -120,10 +163,12 @@ mod_name_filter_server <- function(id, measure_names, of_interest){
       shinyjs::disable("add_names")
       shinyjs::disable("set_name")
       
+      rv$entered_names <- split_names(input$pasted_names, input$name_delimiter)
+      
       # some guesses for what may be wrong
       any_names <- isTruthy(input$pasted_names)
-      delim_invalid <- (!isTruthy(matched_names()) & length(entered_names()) == 1)
-      no_matches <- (!isTruthy(matched_names())) & length(entered_names()) > 1
+      delim_invalid <- (!isTruthy(matched_names()) & length(rv$entered_names) == 1)
+      no_matches <- (!isTruthy(matched_names())) & length(rv$entered_names) > 1
       
       if(!any_names){ 
         print("not any names")
@@ -149,6 +194,15 @@ mod_name_filter_server <- function(id, measure_names, of_interest){
     })
 
     observeEvent(input$add_names, {
+      
+      print("from add names")
+      no_names <- !(isTruthy(matched_names()))
+      
+      shinyFeedback::feedbackWarning(
+        "add_names",
+        no_names,
+        "Select some names before adding a set"
+      )
       
       req(matched_names())
       sets <- sets_of_interest()
