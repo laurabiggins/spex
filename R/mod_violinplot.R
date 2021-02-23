@@ -64,7 +64,7 @@ mod_violinplot_server <- function(id, dataset, meta_sum, metadata, sample_name_c
     
     output$plot <- renderPlot({
       violinplot(selected_data(), input$select_condition, boxplot = input$add_boxplot)
-    })
+    }) %>% bindCache(selected_data(), input$select_condition, input$add_boxplot)
 
     observeEvent(input$browser, browser())
   })

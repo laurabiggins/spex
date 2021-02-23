@@ -81,7 +81,7 @@ mod_histogramServer <- function(id, dataset, metadata, sample_name_col, prefix =
         density_plot(data_to_plot(), input$select_variable, n_to_plot)
       })
       
-      output$plot <- renderPlot(density_plot_obj())
+      output$plot <- renderPlot(density_plot_obj()) %>% bindCache(density_plot_obj())
       
       
       output$download_png <- downloadHandler(
