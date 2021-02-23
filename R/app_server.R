@@ -1,3 +1,8 @@
+# Downloading and saving a file in a chosen location.
+# There's a chrome setting in Settings -> Advanced -> Downloads -> 
+# Ask where to save each file before downloading
+# so it doesn't seem to be a Shiny thing
+
 #' The application server-side
 #' 
 #' @param input,output,session Internal parameters for {shiny}. 
@@ -6,7 +11,7 @@
 #' @noRd
 app_server <- function( input, output, session ) {
   
-  dataset <- golem::get_golem_options("dataset")
+  data_values <- golem::get_golem_options("dataset")
   
   metadata <- golem::get_golem_options("metadata")
   meta_sum <- get_condition_summary(metadata)
@@ -19,7 +24,7 @@ app_server <- function( input, output, session ) {
   
   # Data tab - the main dataset
   output$data_table <- DT::renderDataTable(
-    dt_setup(filtered_dataset(), n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
+    dt_setup(data_values, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
   )
   
   
@@ -63,11 +68,7 @@ app_server <- function( input, output, session ) {
     measures_of_interest()[[input$selected_set]]
   })
 
-  filtered_dataset <- reactiveVal(dataset)
-  
   output$meta_table <- DT::renderDataTable(dt_setup(metadata, n_rows = 20))
-  
-  #output$meta_table <- DT::renderDataTable(metadata, style = "bootstrap4")
   
   output$meta_summary <- renderTable({
     req(input$selected_condition)
@@ -76,25 +77,24 @@ app_server <- function( input, output, session ) {
   })
   
 
-
-  mod_histogramServer("hist", filtered_dataset(), metadata, sample_name_col = sample_names)
+  mod_histogramServer("hist", data_values, metadata, sample_name_col = sample_names)
   
-  mod_heatmap_server("heatmap", filtered_dataset(), meta_sum, metadata, 
+  mod_heatmap_server("heatmap", data_values, meta_sum, metadata, 
                      sample_name_col = sample_names, of_interest = of_interest)
   
   mod_scatterplot_server(
     "scatter", 
-    filtered_dataset(), 
+    data_values, 
     meta_sum, 
     metadata, 
     sample_name_col = sample_names, 
     sets_of_interest = measures_of_interest
   )
   
-  mod_violinplot_server("violinplot", filtered_dataset(), meta_sum, metadata, 
+  mod_violinplot_server("violinplot", data_values, meta_sum, metadata, 
                         sample_name_col = sample_names)
   
-  mod_boxplot_server("boxplot", filtered_dataset(), meta_sum, metadata, 
+  mod_boxplot_server("boxplot", data_values, meta_sum, metadata, 
                      sample_name_col = sample_names)
   
   filter_results <- mod_name_filter_server("name_filter", measure_names, of_interest)
@@ -107,33 +107,5 @@ app_server <- function( input, output, session ) {
   })
   
   observeEvent(input$browser, browser())
-  
-  observeEvent(input$filter_button, {
-    
-    print(filter_results())
-    
-    # select_factors <- paste0(input$nav_name, "-", "include_factors")
-    # filtered_meta <- dplyr::filter(
-    #   metadata, 
-    #   .data[[input$nav_name]] %in% input[[select_factors]]
-    # )
-    # selected_samples <- dplyr::pull(filtered_meta, sample_names)
-    # # we're working with a matrix so can't do dplyr
-    # matrix_columns <- colnames(filtered_dataset()) %in% selected_samples
-    # filt <- filtered_dataset()[, matrix_columns]
-    # filtered_dataset(filt) # set reactiveVal
-    
-  })
-  
-  output$filter_summary <- renderText({
-    "The filtering works on a very basic level. It only works for the include, not 
-    the filter by value, and there are no validity checks. 
-    It'll need update functions for the set of available and relevant conditions."
-  })
-  
-  observeEvent(input$clear_filters, {
-    filtered_dataset(dataset)
-  })
-  
-  
+
 }
