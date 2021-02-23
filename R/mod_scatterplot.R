@@ -7,7 +7,7 @@
 #' @noRd 
 #'
 #' @importFrom shiny NS tagList 
-mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
+mod_scatterplot_ui <- function(id, individual_samples, meta_sum, measures_of_interest){
   
   ns <- NS(id)
   
@@ -25,17 +25,16 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
             choices = sort(names(meta_sum))
           ),
           selectInput(
-            ns("x_axis_multi"), 
+            ns("x_axis"), 
             label = "x axis", 
             choices = ""
           ),
           selectInput(
-            ns("y_axis_multi"), 
+            ns("y_axis"), 
             label = "y axis", 
             choices = "" 
           ),
           actionButton(ns("browser"), "browser"),
-          actionButton(ns("plot_button"), "Update plot"),
           br(),
           br(),
           downloadButton(ns("download_png"), "png"),
@@ -43,12 +42,35 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
         ),
         mainPanel(
           width = 8,
-          shinycssloaders::withSpinner(plotOutput(ns("plot"), width = "100%"), image = "bioinf1.gif", image.width = 100)
-          #plotOutput(ns("plot"), width = "100%")#, height = "100%")
+          shinycssloaders::withSpinner(
+            plotOutput(ns("plot"), width = "100%"), 
+            image = "bioinf1.gif", 
+            image.width = 100
+          )
         )
       ),
-      checkboxInput(ns("highlight_genes"), label = "highlight measure of interest"),
-      checkboxInput(inputId = ns("label_highlights"), label = "show labels")
+      br(),
+      checkboxInput(inputId = "highlight_panel", label = "show highlight options"),
+      conditionalPanel(
+        condition = "input.highlight_panel == 1",
+        wellPanel(
+          fluidRow(
+            column(
+              width = 6, 
+              selectInput(
+                ns("set_to_highlight"),
+                "choose set",
+                choices = names(measures_of_interest)
+              )
+            ),
+            column(
+              width = 6, 
+              checkboxInput(ns("highlight_genes"), label = "highlight set"),
+              checkboxInput(inputId = ns("label_highlights"), label = "show labels")
+            )
+          )
+        )
+      )  
     )
   )
 }
@@ -81,7 +103,7 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum){
 #' that could be used.
 #'
 #' @noRd 
-mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_col, of_interest, prefix = "", session) {
+mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_col, sets_of_interest, prefix = "", session) {
   
   moduleServer(id, function(input, output, session) {
     
@@ -89,106 +111,62 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     # from the server function??
     tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
     
-    options <- reactive(get_choices(input$select_condition, meta_sum))
+    x_y_choices <- reactive(get_choices(input$select_condition, meta_sum))
 
-    rv <- reactiveValues(label_highlighted = FALSE)
+    label_highlighted <- reactiveVal(FALSE)
     
-    # this needs to be made more generic
-    genes_of_interest <- dplyr::pull(of_interest[[1]], gene)
-    
-    observeEvent(input$label_highlights, {
-      rv$label_highlighted <- input$label_highlights
+    observeEvent(sets_of_interest(), {
+      updateSelectInput(session, "set_to_highlight", choices = names(sets_of_interest()))
     })
     
+    observeEvent(input$label_highlights, label_highlighted(input$label_highlights))
+    
     observeEvent(input$select_condition, {
-      req(options())
+      req(x_y_choices())
+      req(length(x_y_choices()) >= 2)
       updateSelectInput(
-        inputId = "x_axis_multi",
-        choices = options(),
+        inputId = "x_axis",
+        choices = x_y_choices(),
         session = session
       )
       updateSelectInput(
-        inputId = "y_axis_multi",
-        choices = options(),
+        inputId = "y_axis",
+        choices = x_y_choices(),
         session = session,
-        selected = options()[2]
+        selected = x_y_choices()[2]
       )
     })
 
-    observeEvent(input$plot_button, {
-      
-      rv$selected_data <- selected_data()
-
-      shinyWidgets::updatePickerInput(
-        session,
-        inputId = "measure_selector",
-        choices = rv$selected_data$row_attribute)
-    })
-    
-    observeEvent(input$highlight_genes, {
-      
-      req(rv$selected_data)
-      
-      if(input$highlight_genes){
-        rv$selected_data <- dplyr::mutate(
-          rv$selected_data,
-          custom_colour = dplyr::if_else(
-            row_attribute %in% genes_of_interest,
-            "red",
-            "grey"
-          )
-        )
-      } else {
-        rv$selected_data <- dplyr::mutate(rv$selected_data, custom_colour = "black")
-      }  
-    })
-    
-    observeEvent(input$highlight_button, {
-      
-      req(rv$selected_data)
-      
-      rv$selected_data <- dplyr::mutate(
-        rv$selected_data,
-        custom_colour = dplyr::if_else(
-          row_attribute %in% input$measure_selector,
-          "red",
-          "grey"
-        )
+    selected_no_colour <- reactive({
+      select_by_group(
+        metadata,
+        tibble_dataset(),
+        condition = input$select_condition,
+        sample_name_col = sample_name_col,
+        x_var = input$x_axis,
+        y_var = input$y_axis
       )
     })
     
-    # the set of selected samples
     selected_data <- reactive({
-      
-      dataset <- select_by_group(
-                   metadata,
-                   tibble_dataset(),
-                   condition = input$select_condition,
-                   sample_name_col = sample_name_col,
-                   x_var = input$x_axis_multi,
-                   y_var = input$y_axis_multi
-                 )
-      
-      dplyr::mutate(dataset, custom_colour = "black")
+      if(input$highlight_genes & isTruthy(input$set_to_highlight)){
+        genes <- get_set_to_highlight(sets_of_interest(), input$set_to_highlight)
+        return(add_colours(selected_no_colour(), genes))
+      } else {
+        return(add_colours(selected_no_colour(), FALSE))
+      }    
     })
+
 
     scatter_plot_object <- reactive({
-      
-      req(rv$selected_data)
-      
-      scatter(
-        rv$selected_data, 
-        input$x_axis_multi, 
-        input$y_axis_multi, 
-        rv$label_highlighted
-      )
-      
+      req(selected_data())
+      scatter(selected_data(), input$x_axis, input$y_axis, label_highlighted())
     })
     
     output$plot <- renderPlot({
-      req(rv$selected_data)
+      req(scatter_plot_object())
       scatter_plot_object()      
-    })
+    }) %>% bindCache(scatter_plot_object())
 
     output$download_png <- downloadHandler(
       filename = function() {
@@ -278,6 +256,24 @@ get_choices <- function(selected_condition, meta_sum){
   opts
 }
 
+#' Get the set of names to highlight on the plot 
+#'
+#' Extracts a vector of names from a list, the list item can have multiple columns
+#' e.g. separate classes within a set of genes, but only the first column will be
+#' returned and any information in other columns will be ignored.
+#'
+#' @param sets list object containing the sets of interest
+#' @param selected_set the selected set
+#'
+#' @return vector of names (genes/proteins etc)
+#' @export
+#'
+#' @examples
+get_set_to_highlight <- function(sets, selected_set){
+  # check it's not null
+  sets[[selected_set]][[1]]
+}
+
 #' get_tibble_dataset
 #' 
 #' Convert the main matrix dataset into a tibble
@@ -336,3 +332,32 @@ select_by_group <- function(metadata, tibble_dataset, condition, sample_name_col
   # returned if n_samples == 2
   tidyr::pivot_wider(selected_data, names_from = condition, values_from = value)
 }
+
+#' Add colour column to tibble
+#' 
+#' This is used for the scatterplot point colours
+#'
+#' @param dataset tibble containing values and names
+#' @param names_to_highlight vector of names that should be in the dataset
+#'
+#' @return tibble with an additional column containing colours
+#' @export
+#'
+#' @examples
+add_colours <- function(data_no_colour, names_to_highlight){
+  
+  if(isTruthy(names_to_highlight)){
+    data_colour <- dplyr::mutate(
+      data_no_colour,
+      custom_colour = dplyr::if_else(
+        row_attribute %in% names_to_highlight,
+        "red",
+        "grey"
+      )
+    ) 
+  } else {
+    data_colour <- dplyr::mutate(data_no_colour, custom_colour = "black")
+  }
+  data_colour
+}
+

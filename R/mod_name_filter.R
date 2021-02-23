@@ -69,7 +69,8 @@ mod_name_filter_ui <- function(id, measure_names){
       )
     ),
     column(
-      width = 5,  
+      width = 5,
+      br(),
       wellPanel(
         h5("2. Add the new set to the sets of interest"),
         fluidRow(
@@ -91,9 +92,7 @@ mod_name_filter_ui <- function(id, measure_names){
         p("To view set information, go to the metadata tab"),
         br(),
         br(),
-        actionButton(ns("browser"), "browser"),
-        br(),
-        checkboxInput(ns("show_dropdown"), "select from dropdown list")
+        actionButton(ns("browser"), "browser")
       )
     )
   )  
@@ -184,8 +183,9 @@ mod_name_filter_server <- function(id, measure_names, of_interest){
           "pasted_names",
           no_matches,
           "No names matched the dataset, make sure the separator option is set correctly
-          below.
-          Select from the set of names in the dataset by using the dropdown list below."
+          below. </br>
+          If this doesn't work, try selecting from the available names in the dataset 
+          by using the dropdown tab." 
         )
       } else if (isTruthy(search_msg())){
         shinyjs::enable("add_names")
@@ -210,9 +210,13 @@ mod_name_filter_server <- function(id, measure_names, of_interest){
       if(input$set_name %in% names(sets)){
         showModal(modal_confirm)
       } else {
-        new_sets <- add_set(sets_of_interest(), input$set_name,  matched_names())
+        this_set_name <- get_set_name(input$set_name, length(sets_of_interest()))
+        new_sets <- add_set(sets_of_interest(), this_set_name,  matched_names())
         sets_of_interest(new_sets)
-        set_msg(paste0("Added set ", input$set_name, ". "))
+        set_msg(paste0("Added ", this_set_name, "."))
+        
+        #sets_of_interest(new_sets())
+        #set_msg(paste0("Added ", this_set_name(), "."))
       }  
     })
 
@@ -228,9 +232,11 @@ mod_name_filter_server <- function(id, measure_names, of_interest){
     observeEvent(input$ok, {
       showNotification("Overwriting set")
       removeModal()
-      new_sets <- add_set(sets_of_interest(), input$set_name,  matched_names())
+      # I don't like this code duplication but I haven't got a nice way to encapsulate it.
+      this_set_name <- get_set_name(input$set_name, length(sets_of_interest()))
+      new_sets <- add_set(sets_of_interest(), this_set_name,  matched_names())
       sets_of_interest(new_sets)
-      set_msg(paste0("Added ", input$set_name, "."))
+      set_msg(paste0("Added ", this_set_name, "."))
     })
     
     observeEvent(input$cancel, {
@@ -298,10 +304,11 @@ get_set_name <- function(set_name, n_sets){
   }
 }    
     
-add_set <- function(sets, new_set_name, new_set){
-  
-  this_set_name <- get_set_name(new_set_name, length(sets))
-  sets[[this_set_name]] = tibble::tibble(this_set_name = new_set)
+add_set <- function(sets, new_set_name = "another_set", new_set){
+  print("new set name = ")
+  print(new_set_name)
+  sets[[new_set_name]] = tibble::tibble(!!new_set_name:=new_set)
   sets
 }    
-    
+
+   
