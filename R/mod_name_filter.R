@@ -10,92 +10,101 @@
 mod_name_filter_ui <- function(id, measure_names){
   
   ns <- NS(id)
-
-  fluidRow(
-    column(
-      width = 7,
-      tabsetPanel(
-        #widths = c(3,9),
-        #well = FALSE,
-        tabPanel(
-          "free text",
-          wellPanel(
-            h5("1. Enter set of names to search for in the dataset"),
-            # style = "padding: 10px",
-            textInput(
-              ns("pasted_names"),
-              label = NULL,
-              width = "500px",
-              placeholder = "Enter names here e.g. gene1, gene2"
-            ),
-            fluidRow(
-              column(
-                width = 7,
-                style = "border: 10px",
-                radioButtons(
-                  ns("name_delimiter"),
-                  label = "separator",
-                  choices = c("space/tab" = "space", "comma" = "comma"),
-                  inline = TRUE
+  tagList(
+    fluidRow(
+      column(
+        width = 7,
+        tabsetPanel(
+          #widths = c(3,9),
+          #well = FALSE,
+          tabPanel(
+            "free text",
+            wellPanel(
+              h5("1. Enter set of names to search for in the dataset"),
+              # style = "padding: 10px",
+              textInput(
+                ns("pasted_names"),
+                label = NULL,
+                width = "500px",
+                placeholder = "Enter names here e.g. gene1, gene2"
+              ),
+              fluidRow(
+                column(
+                  width = 7,
+                  style = "border: 10px",
+                  radioButtons(
+                    ns("name_delimiter"),
+                    label = "separator",
+                    choices = c("space/tab" = "space", "comma" = "comma"),
+                    inline = TRUE
+                  )
+                ),
+                column(
+                  width = 3,
+                  actionButton(ns("search_names"), "search")
                 )
               ),
-              column(
-                width = 3,
-                actionButton(ns("search_names"), "search")
+              textOutput(ns("search_summary"))
+            )
+          ),
+          tabPanel(
+            "dropdown",
+            wellPanel(
+              h5("1. Search names in dataset"),
+              shinyWidgets::pickerInput(
+                inputId = ns("measure_selector"),
+                label = NULL,
+                choices = measure_names,
+                multiple = TRUE,
+                options = shinyWidgets::pickerOptions(
+                  actionsBox = TRUE,
+                  liveSearch = TRUE, 
+                  selectedTextFormat = "count > 10"
+                )
+              ),
+              actionButton(ns("confirm"), "Confirm selection"),
+              textOutput(ns("dropdown_msg"))
+            )
+          )
+        )
+      ),
+      column(
+        width = 5,
+        br(),
+        wellPanel(
+          h5("2. Add the new set to the sets of interest"),
+          fluidRow(
+            column(
+              width = 6,
+              textInput(
+                ns("set_name"), 
+                label = NULL,
+                width = "400px", 
+                placeholder = "name of set"
               )
             ),
-            textOutput(ns("search_summary"))
-          )
-        ),
-        tabPanel(
-          "dropdown",
-          wellPanel(
-            h5("1. Search names in dataset"),
-            shinyWidgets::pickerInput(
-              inputId = ns("measure_selector"),
-              label = NULL,
-              choices = measure_names,
-              multiple = TRUE,
-              options = shinyWidgets::pickerOptions(
-                actionsBox = TRUE,
-                liveSearch = TRUE, 
-                selectedTextFormat = "count > 10"
-              )
-            ),
-            actionButton(ns("confirm"), "Confirm selection"),
-            textOutput(ns("dropdown_msg"))
-          )
+            column(
+              width = 6,
+              actionButton(ns("add_names"), label = "Add")
+            )
+          ),
+          textOutput(ns("add_set_msg")),
+          p("To view set information, go to the metadata tab"),
+          br(),
+          br(),
+          actionButton(ns("browser"), "browser")
         )
       )
     ),
-    column(
-      width = 5,
-      br(),
-      wellPanel(
-        h5("2. Add the new set to the sets of interest"),
-        fluidRow(
-          column(
-            width = 6,
-            textInput(
-              ns("set_name"), 
-              label = NULL,
-              width = "400px", 
-              placeholder = "name of set"
-            )
-          ),
-          column(
-            width = 6,
-            actionButton(ns("add_names"), label = "Add")
-          )
-        ),
-        textOutput(ns("add_set_msg")),
-        p("To view set information, go to the metadata tab"),
-        br(),
-        br(),
-        actionButton(ns("browser"), "browser")
-      )
-    )
-  )  
+    br(),
+    br(),
+    br(), 
+    br(),
+    br(),
+    br(),
+    br(),
+    br()
+  )
 }
 
 

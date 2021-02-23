@@ -24,7 +24,7 @@ mod_histogramUI <- function(id, meta_sum){
         position = "right",
         sidebarPanel(
           style = "padding: 10px",
-          width = 3,
+          width = 4,
           selectInput(
             inputId = ns("select_variable"),
             label = "select variable",
@@ -32,16 +32,30 @@ mod_histogramUI <- function(id, meta_sum){
           ),
           br(),
           downloadButton(ns("download_png"), "png"),
-          br(),
-          br(),
-          actionButton(ns("browser"), "browser")
+          downloadButton(ns("download_pdf"), "pdf")#,
+          #actionButton(ns("browser"), "browser")
         ),
         mainPanel(
-          width = 9,
-          plotOutput(ns("plot"), height = 500)
+          width = 8,
+          shinycssloaders::withSpinner(
+            plotOutput(ns("plot"), width = "100%", height = 500), 
+            image = "bioinf1.gif", 
+            image.width = 100
+          )
         ) 
       )  
-    )  
+    ),
+    tags$script(
+      "var myWidth = 0;
+      $(document).on('shiny:connected', function(event) {
+        myWidth = $(window).width();
+        Shiny.onInputChange('hist-shiny_width', myWidth);
+      });
+      $(window).resize(function(event) {
+         myWidth = $(window).width();
+         Shiny.onInputChange('hist-shiny_width', myWidth);
+      });"
+    )
   )
 }
 
@@ -50,50 +64,68 @@ mod_histogramUI <- function(id, meta_sum){
 #'
 #' @noRd 
 mod_histogramServer <- function(id, dataset, metadata, sample_name_col, prefix = "") {
-  moduleServer(
-    id,
-    function(input, output, session) {
+  moduleServer(id, function(input, output, session) {
       
-      observeEvent(input$browser, browser())
+    observeEvent(input$browser, browser())
 
-      # this should probably be in the main app or even before that, but I'm not
-      # sure whether the time series shold be treated differently 
-      meta_factors <- metadata %>%
-        dplyr::mutate_if(is.character, factor) %>%
-        dplyr::mutate_if(is.double, factor) %>%
-        dplyr::mutate_if(is.integer, factor) 
+    # this should probably be in the main app or even before that, but I'm not
+    # sure whether the time series shold be treated differently 
+    meta_factors <- metadata %>%
+      dplyr::mutate_if(is.character, factor) %>%
+      dplyr::mutate_if(is.double, factor) %>%
+      dplyr::mutate_if(is.integer, factor) 
+    
+    data_to_plot <- reactive({
       
-      data_to_plot <- reactive({
-        
-        tib <- tibble::as_tibble(dataset, rownames = "row_attribute")
-        tidyr::pivot_longer(tib, cols = -row_attribute, names_to = sample_name_col) %>%
-          dplyr::left_join(meta_factors)
-      })
+      tib <- tibble::as_tibble(dataset, rownames = "row_attribute")
+      tidyr::pivot_longer(tib, cols = -row_attribute, names_to = sample_name_col) %>%
+        dplyr::left_join(meta_factors)
+    })
+    
+    density_plot_obj <- reactive({
       
-      density_plot_obj <- reactive({
-        
-        n_to_plot <- length(unique(data_to_plot()[[input$select_variable]]))
-        
-        assertthat::assert_that(
-          ncol(dataset) == length(unique(data_to_plot()$sample_name)),
-          msg = "unexpected number of samples for density plot"
-        )
-        density_plot(data_to_plot(), input$select_variable, n_to_plot)
-      })
+      n_to_plot <- length(unique(data_to_plot()[[input$select_variable]]))
       
-      output$plot <- renderPlot(density_plot_obj()) %>% bindCache(density_plot_obj())
-      
-      
-      output$download_png <- downloadHandler(
-        filename = function() {
-          paste0("density.png")
-        },
-        content = function(file) {
-          ggplot2::ggsave(file, density_plot_obj(), device = "png")
-        }
+      assertthat::assert_that(
+        ncol(dataset) == length(unique(data_to_plot()$sample_name)),
+        msg = "unexpected number of samples for density plot"
       )
-    }
-  )
+      density_plot(data_to_plot(), input$select_variable, n_to_plot)
+    })
+    
+    output$plot <- renderPlot(density_plot_obj()) %>% bindCache(input$select_variable)
+
+        
+    output$download_png <- downloadHandler(
+      filename = function() {
+        paste0("density.png")
+      },
+      content = function(file) {
+        ggplot2::ggsave(
+          file, 
+          density_plot_obj(), 
+          device = "png", 
+          width = input$shiny_width*0.75/4,
+          units = "mm"
+        )
+      }
+    )
+    
+    output$download_pdf <- downloadHandler(
+      filename = function() {
+        paste0("density.pdf")
+      },
+      content = function(file) {
+        ggplot2::ggsave(
+          file, 
+          density_plot_obj(), 
+          device = "pdf", 
+          width = input$shiny_width*0.75/4,
+          units = "mm"
+        )
+      }
+    )
+  })
 }
 
 density_plot <- function(plotting_data, condition, n_samples){

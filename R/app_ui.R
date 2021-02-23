@@ -22,10 +22,9 @@ app_ui <- function(request) {
   #thematic::thematic_on(bg = "#1d305f", fg = "white")
   
   tagList(
-    
     # Leave this function for adding external resources
     golem_add_external_resources(),
-    # List the first level UI elements here 
+    
     fluidPage(
       shinyFeedback::useShinyFeedback(),
       shinyjs::useShinyjs(),
@@ -33,7 +32,8 @@ app_ui <- function(request) {
         bg = bab_dark_blue, 
         fg = "white", 
         primary = bab_light_blue,
-        secondary = bab_light_blue),
+        secondary = bab_light_blue
+      ),
       titlePanel(
         tags$img(
           src = "bioinformatics_logo_square_small.png", 
@@ -136,7 +136,9 @@ app_ui <- function(request) {
                 )
               )
             )  
-          )  
+          ),
+          br(),
+          br()
         ),
         tabPanel(
           "data",
@@ -176,10 +178,6 @@ app_ui <- function(request) {
           p("Any problems please email laura.biggins@babraham.ac.uk", style = "font-size:12px", align = "right")
         )  
       ),
-      # flowLayout(
-      #   tags$img(src = "bioinformatics_logo_small_grey.png", width = "200", height = "71"),
-      #   p("Any problems please email laura.biggins@babraham.ac.uk", style = "font-size:12px", align = "right")
-      # ),
       br()
     )
   )

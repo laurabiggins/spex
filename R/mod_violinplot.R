@@ -18,33 +18,38 @@ mod_violinplot_ui <- function(id, individual_samples, meta_sum){
         position = "right",
         sidebarPanel(
           width = 4,
-          tabsetPanel(
-            id = ns("plot_samples"),
-            tabPanel(
-              title = "condition",
-              br(),
-              selectInput(
-                inputId = ns("select_condition"),
-                label = "",
-                choices = sort(names(meta_sum)),
-              ),
-              br(),
-              checkboxInput(ns("add_boxplot"), "show boxplot"),
-              br(),
-              actionButton(ns("browser"), "browser")
-            )
-          )
+          selectInput(
+            inputId = ns("select_condition"),
+            label = "select variable",
+            choices = sort(names(meta_sum)),
+          ),
+          br(),
+          checkboxInput(ns("add_boxplot"), "add boxplot"),
+          br(),
+          downloadButton(ns("download_png"), "png"),
+          downloadButton(ns("download_pdf"), "pdf")#,
+          #actionButton(ns("browser"), "browser")
         ),
         mainPanel(
           width = 8,
           shinycssloaders::withSpinner(
-            plotOutput(ns("plot"), width = "100%"), 
+            plotOutput(ns("plot"), width = "100%", height = 500), 
             image = "bioinf1.gif", 
             image.width = 100
           )
-          #plotOutput(ns("plot"), width = "100%")#, height = "100%")
         )
       )  
+    ),
+    tags$script(
+      "var myWidth = 0;
+      $(document).on('shiny:connected', function(event) {
+        myWidth = $(window).width();
+        Shiny.onInputChange('violinplot-shiny_width', myWidth);
+      });
+      $(window).resize(function(event) {
+         myWidth = $(window).width();
+         Shiny.onInputChange('violinplot-shiny_width', myWidth);
+      });"
     )
   )
 }
@@ -62,10 +67,46 @@ mod_violinplot_server <- function(id, dataset, meta_sum, metadata, sample_name_c
       data_with_group_info(metadata, tibble_dataset(), input$select_condition, sample_name_col)
     })
     
-    output$plot <- renderPlot({
+    violin_obj <- reactive({
       violinplot(selected_data(), input$select_condition, boxplot = input$add_boxplot)
-    }) %>% bindCache(selected_data(), input$select_condition, input$add_boxplot)
-
+    })
+    
+    output$plot <- renderPlot({
+      #violinplot(selected_data(), input$select_condition, boxplot = input$add_boxplot)
+      violin_obj()
+    }) %>% bindCache(input$select_condition, input$add_boxplot)
+    
+    output$download_png <- downloadHandler(
+      filename = function() {
+        paste0("violin.png")
+      },
+      content = function(file) {
+        ggplot2::ggsave(
+          file, 
+          violin_obj(), 
+          device = "png", 
+          width = input$shiny_width*0.75/4,
+          units = "mm"
+        )
+      }
+    )
+    
+    output$download_pdf <- downloadHandler(
+      filename = function() {
+        paste0("violin.pdf")
+      },
+      content = function(file) {
+        ggplot2::ggsave(
+          file, 
+          violin_obj(), 
+          device = "pdf", 
+          width = input$shiny_width*0.75/4,
+          units = "mm"
+        )
+      }
+    )
+    
+    
     observeEvent(input$browser, browser())
   })
 }

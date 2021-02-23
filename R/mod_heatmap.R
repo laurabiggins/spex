@@ -39,21 +39,21 @@ mod_heatmap_ui <- function(id, individual_samples, meta_sum){
 
     br(),
     br(),
-    actionButton(inputId = ns("browser"), "browser"), 
+    #actionButton(inputId = ns("browser"), "browser"), 
     
     #if we want the downloaded plot to be the window size
     # for height we make the user adjust it, as it won't resize with the window
-    tags$script("
-                var myWidth = 0;
-                $(document).on('shiny:connected', function(event) {
-                  myWidth = $(window).width();
-                  Shiny.onInputChange('heatmap-shiny_width', myWidth);
-                });
-                $(window).resize(function(event) {
-                   myWidth = $(window).width();
-                   Shiny.onInputChange('heatmap-shiny_width', myWidth);
-                });
-              ")
+    tags$script(
+      "var myWidth = 0;
+      $(document).on('shiny:connected', function(event) {
+        myWidth = $(window).width();
+        Shiny.onInputChange('heatmap-shiny_width', myWidth);
+      });
+      $(window).resize(function(event) {
+         myWidth = $(window).width();
+         Shiny.onInputChange('heatmap-shiny_width', myWidth);
+      });"
+    )
   )
 }
 
@@ -146,7 +146,6 @@ mod_heatmap_server <- function(id, dataset, meta_sum, metadata, of_interest,
           )
         }
       )    
-      
       observeEvent(input$browser, browser())
     }
   )

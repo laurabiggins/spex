@@ -34,8 +34,8 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum, measures_of_int
             label = "y axis", 
             choices = "" 
           ),
-          actionButton(ns("browser"), "browser"),
-          br(),
+          #actionButton(ns("browser"), "browser"),
+          #br(),
           br(),
           downloadButton(ns("download_png"), "png"),
           downloadButton(ns("download_pdf"), "pdf")
@@ -43,7 +43,7 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum, measures_of_int
         mainPanel(
           width = 8,
           shinycssloaders::withSpinner(
-            plotOutput(ns("plot"), width = "100%"), 
+            plotOutput(ns("plot"), width = "100%", height = 500), 
             image = "bioinf1.gif", 
             image.width = 100
           )
@@ -74,27 +74,6 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum, measures_of_int
     )
   )
 }
-      # checkboxInput(inputId = "highlight_panel", label = "show highlight options"),
-      # conditionalPanel(
-      #   condition = "input.highlight_panel == 1",
-      #   wellPanel(
-      #     shinyWidgets::pickerInput(
-      #       inputId = ns("measure_selector"),
-      #       label = "Select measure",
-      #       choices = "",
-      #       multiple = TRUE,
-      #       options = shinyWidgets::pickerOptions(
-      #         actionsBox = TRUE,
-      #         liveSearch = TRUE, 
-      #         selectedTextFormat = "count > 10"
-      #       )
-      #     ),
-      #     actionButton(inputId = ns("highlight_button"), "highlight on plot"),
-      #   )
-      #)  
-#     )
-#   )
-# }
 
 #' scatterplot server function
 #' 
@@ -109,14 +88,26 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     
     # This breaks if it's not a reactive - I guess it's because it takes arguments
     # from the server function??
-    tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
+    #tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
+    tibble_dataset <- get_tibble_dataset(dataset, sample_name_col)
     
     x_y_choices <- reactive(get_choices(input$select_condition, meta_sum))
 
     label_highlighted <- reactiveVal(FALSE)
     
+    shinyjs::disable("label_highlights")
+    
     observeEvent(sets_of_interest(), {
       updateSelectInput(session, "set_to_highlight", choices = names(sets_of_interest()))
+    })
+    
+    observeEvent(input$highlight_genes, {
+      if(input$highlight_genes) {
+        shinyjs::enable("label_highlights")
+      } else {
+        shinyjs::disable("label_highlights")
+        updateCheckboxInput(session, "label_highlights", "show labels", value = FALSE)
+      }  
     })
     
     observeEvent(input$label_highlights, label_highlighted(input$label_highlights))
@@ -140,7 +131,7 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     selected_no_colour <- reactive({
       select_by_group(
         metadata,
-        tibble_dataset(),
+        tibble_dataset,
         condition = input$select_condition,
         sample_name_col = sample_name_col,
         x_var = input$x_axis,
@@ -157,7 +148,6 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
       }    
     })
 
-
     scatter_plot_object <- reactive({
       req(selected_data())
       scatter(selected_data(), input$x_axis, input$y_axis, label_highlighted())
@@ -166,7 +156,8 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     output$plot <- renderPlot({
       req(scatter_plot_object())
       scatter_plot_object()      
-    }) %>% bindCache(scatter_plot_object())
+    }) %>% bindCache(input$select_condition, input$x_axis, input$y_axis, input$set_to_highlight,
+                     input$highlight_genes, label_highlighted())
 
     output$download_png <- downloadHandler(
       filename = function() {
