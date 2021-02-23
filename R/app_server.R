@@ -62,8 +62,7 @@ app_server <- function( input, output, session ) {
     req(measures_of_interest())
     measures_of_interest()[[input$selected_set]]
   })
-  
-  
+
   filtered_dataset <- reactiveVal(dataset)
   
   output$meta_table <- DT::renderDataTable(dt_setup(metadata, n_rows = 20))
@@ -83,8 +82,14 @@ app_server <- function( input, output, session ) {
   mod_heatmap_server("heatmap", filtered_dataset(), meta_sum, metadata, 
                      sample_name_col = sample_names, of_interest = of_interest)
   
-  mod_scatterplot_server("scatter", filtered_dataset(), meta_sum, metadata, 
-                         sample_name_col = sample_names, of_interest = of_interest)
+  mod_scatterplot_server(
+    "scatter", 
+    filtered_dataset(), 
+    meta_sum, 
+    metadata, 
+    sample_name_col = sample_names, 
+    sets_of_interest = measures_of_interest
+  )
   
   mod_violinplot_server("violinplot", filtered_dataset(), meta_sum, metadata, 
                         sample_name_col = sample_names)

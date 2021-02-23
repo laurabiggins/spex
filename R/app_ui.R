@@ -13,7 +13,7 @@ app_ui <- function(request) {
   
   
   metadata <- golem::get_golem_options("metadata")
-  #of_interest <- golem::get_golem_options("of_interest")
+  of_interest <- golem::get_golem_options("of_interest")
   meta_sum <- get_condition_summary(metadata)
   samples <- get_all_sample_names(metadata)
   measure_names <- rownames(golem::get_golem_options("dataset"))
@@ -145,10 +145,11 @@ app_ui <- function(request) {
         ),
         tabPanel(
           "plot",
+          br(),
           navlistPanel(
             "plot type",
             tabPanel("histogram", mod_histogramUI("hist", meta_sum)),
-            tabPanel("scatterplot", mod_scatterplot_ui("scatter", samples, meta_sum)),
+            tabPanel("scatterplot", mod_scatterplot_ui("scatter", samples, meta_sum, of_interest)),
             tabPanel("heatmap", mod_heatmap_ui("heatmap", samples, meta_sum)),
             tabPanel("violinplot", mod_violinplot_ui("violinplot", samples, meta_sum)),
             #tabPanel("boxplot", mod_boxplot_ui("boxplot", samples, meta_sum)),
