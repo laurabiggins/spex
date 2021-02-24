@@ -89,7 +89,7 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     # This breaks if it's not a reactive - I guess it's because it takes arguments
     # from the server function??
     #tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
-    tibble_dataset <- get_tibble_dataset(dataset, sample_name_col)
+    tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
     
     x_y_choices <- reactive(get_choices(input$select_condition, meta_sum))
 
@@ -131,7 +131,7 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     selected_no_colour <- reactive({
       select_by_group(
         metadata,
-        tibble_dataset,
+        tibble_dataset(),
         condition = input$select_condition,
         sample_name_col = sample_name_col,
         x_var = input$x_axis,
