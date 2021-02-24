@@ -1,0 +1,15 @@
+metadata tab
+data tab 
+plot tab
+    hist
+        change to sample_name
+    scatter
+        change to OEA
+    heatmap
+    violinplot
+filter tab
+add 10 genes 
+default name
+scatterplot
+highlight set
+add labels

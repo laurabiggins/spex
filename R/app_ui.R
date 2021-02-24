@@ -11,12 +11,13 @@
 
 app_ui <- function(request) {
   
-  
-  metadata <- golem::get_golem_options("metadata")
-  of_interest <- golem::get_golem_options("of_interest")
+  #metadata <- golem::get_golem_options("metadata")
+  #of_interest <- golem::get_golem_options("of_interest")
   meta_sum <- get_condition_summary(metadata)
   samples <- get_all_sample_names(metadata)
-  measure_names <- rownames(golem::get_golem_options("dataset"))
+  #meta_sum <- 1:4
+  #samples <- 1:3
+  #measure_names <- rownames(golem::get_golem_options("dataset"))
   bab_light_blue <- "#00aeef"
   bab_dark_blue <- "#1d305f"
   #thematic::thematic_on(bg = "#1d305f", fg = "white")
