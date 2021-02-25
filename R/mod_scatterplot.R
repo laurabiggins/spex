@@ -45,7 +45,7 @@ mod_scatterplot_ui <- function(id, meta_sum, measures_of_interest){
           shinycssloaders::withSpinner(
             plotOutput(ns("plot"), width = "100%", height = 500), 
             image = "bioinf1.gif", 
-            image.width = 100
+            image.width = 100, image.height = 40
           )
         )
       ),
