@@ -16,7 +16,7 @@
 #  
 #   )
 # }
-mod_heatmap_ui <- function(id, individual_samples, meta_sum){
+mod_heatmap_ui <- function(id, meta_sum){
   
   ns <- NS(id)
   

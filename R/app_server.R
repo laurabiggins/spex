@@ -9,15 +9,17 @@
 #'     DO NOT REMOVE.
 #' @import shiny
 #' @noRd
-app_server <- function( input, output, session ) {
+app_server <- function(input, output, session ) {
   
   data_values <- golem::get_golem_options("dataset")
+  measure_names <- rownames(data_values)
   
+  #metadata <- golem::get_golem_options("metadata0")
   metadata <- golem::get_golem_options("metadata")
-  meta_sum <- get_condition_summary(metadata)
+  #meta_sum <- get_condition_summary(metadata)
   sample_names <- golem::get_golem_options("sample_names")
   of_interest <- golem::get_golem_options("of_interest")
-  measure_names <- rownames(golem::get_golem_options("dataset"))
+  #measure_names <- rownames(golem::get_golem_options("dataset"))
   #thematic::thematic_on(bg = "#1d305f", fg = "white")
   
   measures_of_interest <- reactiveVal(of_interest)
@@ -37,18 +39,18 @@ app_server <- function( input, output, session ) {
   # })
   
   output$meta_info1 <- renderText({
-    paste0("The dataset contains ", nrow(meta_sum[[sample_names]]), " samples.")
+    paste0("The dataset contains ", nrow(metadata$meta_summary[[sample_names]]), " samples.")
   })
   
   output$meta_info2 <- renderText({
     paste0("Variables are: ", 
-           paste0(names(meta_sum)[!names(meta_sum) %in% sample_names], collapse = ", "),
+           paste0(names(metadata$meta_summary)[!names(metadata$meta_summary) %in% metadata$sample_name], collapse = ", "),
            "."
     )
   })
   
   output$meta_info3 <- renderTable({
-    tibble::enframe(sapply(meta_sum, nrow))
+    tibble::enframe(sapply(metadata$meta_summary, nrow))
   }, colnames = FALSE)
   
   output$set_info1 <- renderText({
@@ -72,30 +74,30 @@ app_server <- function( input, output, session ) {
   
   output$meta_summary <- renderTable({
     req(input$selected_condition)
-    req(meta_sum)
-    meta_sum[[input$selected_condition]]
+    req(metadata$meta_summary)
+    metadata$meta_summary[[input$selected_condition]]
   })
   
 
-  mod_histogramServer("hist", data_values, metadata, sample_name_col = sample_names)
+  mod_histogramServer("hist", data_values, metadata$meta_all, sample_name_col = sample_names)
   
-  mod_heatmap_server("heatmap", data_values, meta_sum, metadata, 
+  mod_heatmap_server("heatmap", data_values, metadata$meta_summary, metadata$meta_all, 
                      sample_name_col = sample_names, of_interest = of_interest)
   
   mod_scatterplot_server(
     "scatter", 
     data_values, 
-    meta_sum, 
-    metadata, 
+    metadata$meta_summary, 
+    metadata$meta_all, 
     sample_name_col = sample_names, 
     sets_of_interest = measures_of_interest
   )
   
-  mod_violinplot_server("violinplot", data_values, meta_sum, metadata, 
+  mod_violinplot_server("violinplot", data_values, metadata$meta_summary, metadata$meta_all, 
                         sample_name_col = sample_names)
   
-  mod_boxplot_server("boxplot", data_values, meta_sum, metadata, 
-                     sample_name_col = sample_names)
+  #mod_boxplot_server("boxplot", data_values, metadata$meta_summary, metadata, 
+                     #sample_name_col = sample_names)
   
   filter_results <- mod_name_filter_server("name_filter", measure_names, of_interest)
   

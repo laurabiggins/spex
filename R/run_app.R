@@ -19,7 +19,8 @@ run_app <- function(
     #                   dataset  = qs::qread("inst/extdata/femExpression2.rds"),
     #                   of_interest = qs::qread("inst/extdata/of_interest2.rds"),
     #                   sample_names = "sample_name")
-    golem_opts = list(metadata = readRDS("inst/extdata/metaFem_edited.rds"),
+    golem_opts = list(metadata0 = readRDS("inst/extdata/metaFem_edited.rds"),
+                      metadata = qs::qread("data/metadata.qs"),
                       dataset  = readRDS("inst/extdata/femExpression2.rds"),
                       of_interest = readRDS("inst/extdata/of_interest2.rds"),
                       sample_names = "sample_name")

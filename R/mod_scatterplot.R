@@ -7,7 +7,7 @@
 #' @noRd 
 #'
 #' @importFrom shiny NS tagList 
-mod_scatterplot_ui <- function(id, individual_samples, meta_sum, measures_of_interest){
+mod_scatterplot_ui <- function(id, meta_sum, measures_of_interest){
   
   ns <- NS(id)
   
@@ -34,7 +34,7 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum, measures_of_int
             label = "y axis", 
             choices = "" 
           ),
-          #actionButton(ns("browser"), "browser"),
+          actionButton(ns("browser"), "browser"),
           #br(),
           br(),
           downloadButton(ns("download_png"), "png"),
@@ -77,25 +77,22 @@ mod_scatterplot_ui <- function(id, individual_samples, meta_sum, measures_of_int
 
 #' scatterplot server function
 #' 
-#' This is fairly neat but I don't know if it's the most efficient way of selecting 
-#' and plotting. There are various combinations of reactives/observeEvent/eventReactive 
-#' that could be used.
 #'
 #' @noRd 
 mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_col, sets_of_interest, prefix = "", session) {
   
   moduleServer(id, function(input, output, session) {
     
-    # This breaks if it's not a reactive - I guess it's because it takes arguments
-    # from the server function??
-    #tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
+    # Made this a reactive so that it's not called on initialisation
     tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
     
-    x_y_choices <- reactive(get_choices(input$select_condition, meta_sum))
+    x_y_choices <- reactive(get_choices(input$select_condition, meta_sum)) %>% bindCache(input$select_condition)
 
     label_highlighted <- reactiveVal(FALSE)
     
     shinyjs::disable("label_highlights")
+    
+    rv <- reactiveValues()
     
     observeEvent(sets_of_interest(), {
       updateSelectInput(session, "set_to_highlight", choices = names(sets_of_interest()))
@@ -111,6 +108,18 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     })
     
     observeEvent(input$label_highlights, label_highlighted(input$label_highlights))
+
+    # There was an issue with the updating of the drop downs - there were some times 
+    # when the variable type didn't match the x and y vars, because it hadn't had time to.
+    # This seems to fix it.
+    observe({
+      if(input$x_axis %in% metadata[[input$select_condition]] &
+        input$y_axis %in% metadata[[input$select_condition]]){
+          rv$xvar <- input$x_axis
+          rv$yvar <- input$y_axis
+          rv$condition <- input$select_condition
+      }
+    })
     
     observeEvent(input$select_condition, {
       req(x_y_choices())
@@ -129,17 +138,19 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     })
 
     selected_no_colour <- reactive({
+
       select_by_group(
         metadata,
         tibble_dataset(),
-        condition = input$select_condition,
+        condition = rv$condition,
         sample_name_col = sample_name_col,
-        x_var = input$x_axis,
-        y_var = input$y_axis
+        x_var = rv$xvar,
+        y_var = rv$yvar
       )
     })
     
     selected_data <- reactive({
+      req(selected_no_colour())
       if(input$highlight_genes & isTruthy(input$set_to_highlight)){
         genes <- get_set_to_highlight(sets_of_interest(), input$set_to_highlight)
         return(add_colours(selected_no_colour(), genes))
@@ -309,7 +320,9 @@ select_by_group <- function(metadata, tibble_dataset, condition, sample_name_col
   selected_data <- dplyr::inner_join(selected_samples, tibble_dataset)
   
   if(n_samples < 2 | length(unique(selected_data[[sample_name_col]])) < 2) {
-    stop("only found 1 selected variable to plot on scatter")
+    print("only found 1 selected variable to plot on scatter")
+    print(paste0("n_samples = ", n_samples, "selected_data[[sample_name_col]] = ", selected_data[[sample_name_col]]))
+    #browser()
   }
   # whether to group and summarise
   if(n_samples > 2) {

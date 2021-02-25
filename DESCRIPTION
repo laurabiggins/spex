@@ -33,4 +33,5 @@ Suggests:
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Depends: 
-    magrittr
+    magrittr,
+    R (>= 2.10)

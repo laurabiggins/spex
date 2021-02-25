@@ -7,7 +7,7 @@
 #' @noRd 
 #'
 #' @importFrom shiny NS tagList 
-mod_violinplot_ui <- function(id, individual_samples, meta_sum){
+mod_violinplot_ui <- function(id, meta_sum){
   
   ns <- NS(id)
   
@@ -27,8 +27,8 @@ mod_violinplot_ui <- function(id, individual_samples, meta_sum){
           checkboxInput(ns("add_boxplot"), "add boxplot"),
           br(),
           downloadButton(ns("download_png"), "png"),
-          downloadButton(ns("download_pdf"), "pdf")#,
-          #actionButton(ns("browser"), "browser")
+          downloadButton(ns("download_pdf"), "pdf"),
+          actionButton(ns("browser"), "browser")
         ),
         mainPanel(
           width = 8,

@@ -11,13 +11,13 @@
 
 app_ui <- function(request) {
   
-  #metadata <- golem::get_golem_options("metadata")
-  #of_interest <- golem::get_golem_options("of_interest")
-  meta_sum <- get_condition_summary(metadata)
-  samples <- get_all_sample_names(metadata)
-  #meta_sum <- 1:4
-  #samples <- 1:3
-  #measure_names <- rownames(golem::get_golem_options("dataset"))
+  metadata <- golem::get_golem_options("metadata")
+  of_interest <- golem::get_golem_options("of_interest")
+  #meta_sum <- get_condition_summary(metadata)
+  #samples <- get_all_sample_names(metadata)
+  
+  # we could get rid of this by using updateSelect from the mod_name_filter server function
+  measure_names <- rownames(golem::get_golem_options("dataset"))
   bab_light_blue <- "#00aeef"
   bab_dark_blue <- "#1d305f"
   #thematic::thematic_on(bg = "#1d305f", fg = "white")
@@ -99,7 +99,7 @@ app_ui <- function(request) {
                       selectInput(
                         "selected_condition",
                         "select condition",
-                        choices = names(meta_sum)
+                        choices = names(metadata$meta_sum)
                       ),
                     ),
                     column(width = 6, tableOutput("meta_summary"))
@@ -151,11 +151,10 @@ app_ui <- function(request) {
           br(),
           navlistPanel(
             "plot type",
-            tabPanel("histogram", mod_histogramUI("hist", meta_sum)),
-            tabPanel("scatterplot", mod_scatterplot_ui("scatter", samples, meta_sum, of_interest)),
-            tabPanel("heatmap", mod_heatmap_ui("heatmap", samples, meta_sum)),
-            tabPanel("violinplot", mod_violinplot_ui("violinplot", samples, meta_sum)),
-            #tabPanel("boxplot", mod_boxplot_ui("boxplot", samples, meta_sum)),
+            tabPanel("histogram", mod_histogramUI("hist", metadata$meta_sum)),
+            tabPanel("scatterplot", mod_scatterplot_ui("scatter", metadata$meta_sum, of_interest)),
+            tabPanel("heatmap", mod_heatmap_ui("heatmap", metadata$meta_sum)),
+            tabPanel("violinplot", mod_violinplot_ui("violinplot", metadata$meta_sum)),
             widths = c(3,9)
           )
         ),
