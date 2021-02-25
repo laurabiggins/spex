@@ -13,9 +13,7 @@ app_ui <- function(request) {
   
   metadata <- golem::get_golem_options("metadata")
   of_interest <- golem::get_golem_options("of_interest")
-  #meta_sum <- get_condition_summary(metadata)
-  #samples <- get_all_sample_names(metadata)
-  
+
   # we could get rid of this by using updateSelect from the mod_name_filter server function
   measure_names <- rownames(golem::get_golem_options("dataset"))
   bab_light_blue <- "#00aeef"
