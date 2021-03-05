@@ -35,10 +35,11 @@ app_ui <- function(request) {
       ),
       titlePanel(
         tags$img(
-          src = "bioinformatics_logo_square_small.png", 
+          src = "BI_logo_grey.png", 
+          #src = "bioinformatics_logo_square_small.png", 
           style="margin-top: -10px; padding-right:10px; padding-bottom:10px", 
-          width = "70", 
-          height = "70",
+          width = "80", 
+          height = "85",
           align = "right"
           ),
         windowTitle="spex"
