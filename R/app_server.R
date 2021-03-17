@@ -70,7 +70,7 @@ app_server <- function(input, output, session ) {
     measures_of_interest()[[input$selected_set]]
   })
 
-  output$meta_table <- DT::renderDataTable(dt_setup(metadata, n_rows = 20))
+  output$meta_table <- DT::renderDataTable(dt_setup(metadata$meta_all, n_rows = 20))
   
   output$meta_summary <- renderTable({
     req(input$selected_condition)
