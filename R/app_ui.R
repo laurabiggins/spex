@@ -108,8 +108,8 @@ app_ui <- function(request) {
                 conditionalPanel(
                   condition = "input.show_meta == 1",
                   DT::dataTableOutput("meta_table")
-                ),
-                actionButton("browser", "browser")
+                )#,
+                #actionButton("browser", "browser")
               )
             ),
             column(

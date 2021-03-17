@@ -91,8 +91,8 @@ mod_name_filter_ui <- function(id, measure_names){
           textOutput(ns("add_set_msg")),
           p("To view set information, go to the metadata tab"),
           br(),
-          br(),
-          actionButton(ns("browser"), "browser")
+          br()#,
+          #actionButton(ns("browser"), "browser")
         )
       )
     ),
