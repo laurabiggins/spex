@@ -22,6 +22,16 @@ measure_names <- rownames(dataset)
 bab_light_blue <- "#00aeef"
 bab_dark_blue <- "#1d305f"
 
+meta_factors <- metadata$meta_all %>%
+ dplyr::mutate_if(is.character, factor) %>%
+ dplyr::mutate_if(is.double, factor) %>%
+ dplyr::mutate_if(is.integer, factor)
+
+tib <- tibble::as_tibble(dataset, rownames = "row_attribute")
+long_data_tib <- tidyr::pivot_longer(tib, cols = -row_attribute, names_to = sample_names) %>%
+ dplyr::left_join(meta_factors)
+
+
 ui <- tagList(
   
   #bootstrapDep,
@@ -236,16 +246,16 @@ server <- function(input, output, session ) {
   })
   
   
-  mod_histogramServer("hist", data_values, metadata$meta_all, sample_name_col = sample_names)
+  mod_histogramServer("hist", data_to_plot = long_data_tib)
   
   mod_heatmap_server("heatmap", data_values, metadata$meta_summary, metadata$meta_all, 
                      sample_name_col = sample_names, of_interest = of_interest)
   
   mod_scatterplot_server(
     "scatter", 
-    data_values, 
-    metadata$meta_summary, 
-    metadata$meta_all, 
+    long_data_tib = long_data_tib,
+    #data_values, 
+    meta_sum = metadata$meta_summary, 
     sample_name_col = sample_names, 
     sets_of_interest = measures_of_interest
   )

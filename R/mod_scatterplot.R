@@ -34,7 +34,7 @@ mod_scatterplot_ui <- function(id, meta_sum, measures_of_interest){
             label = "y axis", 
             choices = "" 
           ),
-          #actionButton(ns("browser"), "browser"),
+          actionButton(ns("browser"), "browser"),
           #br(),
           br(),
           downloadButton(ns("download_png"), "png"),
@@ -79,12 +79,12 @@ mod_scatterplot_ui <- function(id, meta_sum, measures_of_interest){
 #' 
 #'
 #' @noRd 
-mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_col, sets_of_interest, prefix = "", session) {
+mod_scatterplot_server <- function(id, long_data_tib, meta_sum, sample_name_col, sets_of_interest, prefix = "", session) {
   
   moduleServer(id, function(input, output, session) {
     
     # Made this a reactive so that it's not called on initialisation
-    tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
+    #tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
     
     x_y_choices <- reactive(get_choices(input$select_condition, meta_sum)) %>% bindCache(input$select_condition)
 
@@ -113,8 +113,10 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
     # when the variable type didn't match the x and y vars, because it hadn't had time to.
     # This seems to fix it.
     observe({
-      if(input$x_axis %in% metadata[[input$select_condition]] &
-        input$y_axis %in% metadata[[input$select_condition]]){
+      #if(input$x_axis %in% metadata[[input$select_condition]] &
+      #  input$y_axis %in% metadata[[input$select_condition]]){
+      if(input$x_axis %in% long_data_tib[[input$select_condition]] &
+         input$y_axis %in% long_data_tib[[input$select_condition]]){
           rv$xvar <- input$x_axis
           rv$yvar <- input$y_axis
           rv$condition <- input$select_condition
@@ -137,38 +139,41 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
       )
     })
 
-    selected_no_colour <- reactive({
-
+    selected_data <- reactive({
       select_by_group(
-        metadata,
-        tibble_dataset(),
+        tibble_dataset = long_data_tib,
         condition = rv$condition,
         sample_name_col = sample_name_col,
         x_var = rv$xvar,
         y_var = rv$yvar
       )
     })
-    
-    selected_data <- reactive({
-      req(selected_no_colour())
-      if(input$highlight_genes & isTruthy(input$set_to_highlight)){
-        genes <- get_set_to_highlight(sets_of_interest(), input$set_to_highlight)
-        return(add_colours(selected_no_colour(), genes))
-      } else {
-        return(add_colours(selected_no_colour(), FALSE))
-      }    
-    })
 
+    points_to_highlight <- reactive({
+      req(selected_data())
+      if(input$highlight_genes & isTruthy(input$set_to_highlight)) {
+        genes <- get_set_to_highlight(sets_of_interest(), input$set_to_highlight)
+        return(dplyr::filter(selected_data(), row_attribute %in% genes))
+      } else NULL
+    })
+    
     scatter_plot_object <- reactive({
       req(selected_data())
-      scatter(selected_data(), input$x_axis, input$y_axis, label_highlighted())
+      scatter(selected_data(), points_to_highlight(), input$x_axis, input$y_axis, label_highlighted())
     })
     
     output$plot <- renderPlot({
       req(scatter_plot_object())
-      scatter_plot_object()      
-    }) %>% bindCache(input$select_condition, input$x_axis, input$y_axis, input$set_to_highlight,
-                     input$highlight_genes, label_highlighted())
+      scatter_plot_object()
+    }) %>% bindCache(
+      input$select_condition, 
+      input$x_axis, 
+      input$y_axis, 
+      input$set_to_highlight,
+      input$highlight_genes, 
+      label_highlighted()
+    )
+
 
     output$download_png <- downloadHandler(
       filename = function() {
@@ -201,30 +206,38 @@ mod_scatterplot_server <- function(id, dataset, meta_sum, metadata, sample_name_
 #'
 #' @return ggplot object
 #' @noRd
-scatter <- function(dataset, x_var, y_var, label_subset) {
+scatter <- function(dataset, points_to_highlight, x_var, y_var, label_subset) {
 
   req(x_var %in% colnames(dataset))
   req(y_var %in% colnames(dataset))
   
-  dataset <- dplyr::arrange(dataset, custom_colour)
+  main_colour <- dplyr::if_else(is.null(points_to_highlight), "black", "grey")
   
-  p <- dataset %>%
-    ggplot2::ggplot(
-      ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]])
-    ) +
-    ggplot2::geom_point(colour = dataset[["custom_colour"]]) +
+  p <- ggplot2::ggplot(dataset, ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]])) +
+    ggplot2::geom_point(colour = main_colour) + 
     ggplot2::geom_abline(slope = 1, colour = "#3cc1f2") +
     ggplot2::theme(legend.position = "none") 
   
+  if(!is.null(points_to_highlight)) {
+    p <- p + ggplot2::geom_point(data = points_to_highlight, ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]]), colour = "red")
+  }
+  
   if(label_subset){
     p <- p + ggplot2::geom_text(
-      data = subset(dataset, custom_colour == "red"),
+      #data = subset(dataset, custom_colour == "red"),
+      data = points_to_highlight,
       ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]], label = row_attribute),
       nudge_x = 1
     )
   }
   p
 }
+
+#scatter(selected_data(), input$x_axis, input$y_axis, label_highlighted())
+# dataset <- selected_data()
+# x_var <- input$x_axis
+# y_var <- input$y_axis
+# label_subset <- label_highlighted()
 
 #' get_choices
 #' 
@@ -276,20 +289,6 @@ get_set_to_highlight <- function(sets, selected_set){
   sets[[selected_set]][[1]]
 }
 
-#' get_tibble_dataset
-#' 
-#' Convert the main matrix dataset into a tibble
-#'
-#' @param matrix_data main dataset
-#' @param sample_name_col column name that contains all the sample names (should
-#' be set in the initial golem options, then passed through as a function argument
-#' to the module)
-#'
-#' @return tibble
-get_tibble_dataset <- function(matrix_data, sample_name_col) {
-  tib_data <- tibble::as_tibble(matrix_data, rownames = "row_attribute")
-  tidyr::pivot_longer(tib_data, !row_attribute, names_to = sample_name_col)
-}
 
 #' select_by_group
 #' 
@@ -298,7 +297,6 @@ get_tibble_dataset <- function(matrix_data, sample_name_col) {
 #' If samples are selected by group, so that there are multiple samples per group, 
 #' the mean value for each measure within the group is calculated
 #'
-#' @param metadata the metadata tibble
 #' @param tibble_dataset the main dataset in tibble format
 #' @param condition the condition that we want to pull the groups from
 #' @param sample_name_col the name of the column that contains all the sample names
@@ -309,20 +307,23 @@ get_tibble_dataset <- function(matrix_data, sample_name_col) {
 #' @export
 #'
 #' @examples
-select_by_group <- function(metadata, tibble_dataset, condition, sample_name_col, x_var, y_var){
+#' 
+
+select_by_group <- function(tibble_dataset, condition, sample_name_col, x_var, y_var){
+
+  selected_data <- dplyr::filter(tibble_dataset, .data[[condition]] %in% c(x_var, y_var))
+  n_samples <- dplyr::n_distinct(selected_data[[sample_name_col]])
   
-  selected_samples <- metadata %>%
-    dplyr::filter(.data[[condition]] %in% c(x_var, y_var)) %>%
-    dplyr::select(c(condition, sample_name_col))  
-  
-  n_samples <- dplyr::count(selected_samples)
-  
-  selected_data <- dplyr::inner_join(selected_samples, tibble_dataset)
-  
-  if(n_samples < 2 | length(unique(selected_data[[sample_name_col]])) < 2) {
+  if(n_samples < 2) { # | length(unique(selected_data[[sample_name_col]])) < 2) {
     print("only found 1 selected variable to plot on scatter")
-    print(paste0("n_samples = ", n_samples, "selected_data[[sample_name_col]] = ", selected_data[[sample_name_col]]))
-    #browser()
+    print(
+      paste0(
+        "n_samples = ", 
+        n_samples, 
+        "selected_data[[sample_name_col]] = ", 
+        selected_data[[sample_name_col]]
+        )
+      )
   }
   # whether to group and summarise
   if(n_samples > 2) {
@@ -335,33 +336,5 @@ select_by_group <- function(metadata, tibble_dataset, condition, sample_name_col
   }
   # returned if n_samples == 2
   tidyr::pivot_wider(selected_data, names_from = condition, values_from = value)
-}
-
-#' Add colour column to tibble
-#' 
-#' This is used for the scatterplot point colours
-#'
-#' @param dataset tibble containing values and names
-#' @param names_to_highlight vector of names that should be in the dataset
-#'
-#' @return tibble with an additional column containing colours
-#' @export
-#'
-#' @examples
-add_colours <- function(data_no_colour, names_to_highlight){
-  
-  if(isTruthy(names_to_highlight)){
-    data_colour <- dplyr::mutate(
-      data_no_colour,
-      custom_colour = dplyr::if_else(
-        row_attribute %in% names_to_highlight,
-        "red",
-        "grey"
-      )
-    ) 
-  } else {
-    data_colour <- dplyr::mutate(data_no_colour, custom_colour = "black")
-  }
-  data_colour
 }
 
