@@ -38,7 +38,7 @@ ui <- tagList(
     ),
     titlePanel(
       tags$img(
-        src = "BI_logo_grey.png", 
+        src = "images/BI_logo_grey.png", 
         style="margin-top: -10px; padding-right:10px; padding-bottom:10px", 
         width = "80", 
         height = "85",
@@ -169,7 +169,7 @@ ui <- tagList(
     fluidRow(
       column(
         width = 3,
-        tags$img(src = "bioinformatics_logo_small_grey.png", width = "200", height = "71")
+        tags$img(src = "images/bioinformatics_logo_small_grey.png", width = "200", height = "71")
       ),
       column(
         width = 6,
