@@ -39,7 +39,7 @@ mod_histogramUI <- function(id, meta_sum){
           width = 8,
           shinycssloaders::withSpinner(
             plotOutput(ns("plot"), width = "100%", height = 500), 
-            image = "bioinf1.gif", 
+            image = "images/bioinf1.gif", 
             image.width = 100
           )
         ) 
