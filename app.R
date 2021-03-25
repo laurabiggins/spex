@@ -254,14 +254,12 @@ server <- function(input, output, session ) {
   mod_scatterplot_server(
     "scatter", 
     long_data_tib = long_data_tib,
-    #data_values, 
     meta_sum = metadata$meta_summary, 
     sample_name_col = sample_names, 
     sets_of_interest = measures_of_interest
   )
   
-  mod_violinplot_server("violinplot", data_values, metadata$meta_summary, metadata$meta_all, 
-                        sample_name_col = sample_names)
+  mod_violinplot_server("violinplot", long_data_tib, sample_name_col = sample_names)
   
   filter_results <- mod_name_filter_server("name_filter", measure_names, of_interest)
   
