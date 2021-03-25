@@ -1,6 +1,6 @@
-context("golem tests")
+#context("golem tests")
 
-library(golem)
+#library(golem)
 
 # test_that("app ui", {
 #   ui <- app_ui()

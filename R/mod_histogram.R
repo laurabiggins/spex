@@ -32,8 +32,8 @@ mod_histogramUI <- function(id, meta_sum){
           ),
           br(),
           downloadButton(ns("download_png"), "png"),
-          downloadButton(ns("download_pdf"), "pdf")#,
-          #actionButton(ns("browser"), "browser")
+          downloadButton(ns("download_pdf"), "pdf"),
+          actionButton(ns("browser"), "browser")
         ),
         mainPanel(
           width = 8,
@@ -63,34 +63,20 @@ mod_histogramUI <- function(id, meta_sum){
 #' histogram Server Function
 #'
 #' @noRd 
-mod_histogramServer <- function(id, dataset, metadata, sample_name_col, prefix = "") {
+mod_histogramServer <- function(id, data_to_plot, prefix = "") {
   moduleServer(id, function(input, output, session) {
       
     observeEvent(input$browser, browser())
 
-    # this should probably be in the main app or even before that, but I'm not
-    # sure whether the time series shold be treated differently 
-    meta_factors <- metadata %>%
-      dplyr::mutate_if(is.character, factor) %>%
-      dplyr::mutate_if(is.double, factor) %>%
-      dplyr::mutate_if(is.integer, factor) 
-    
-    data_to_plot <- reactive({
-      
-      tib <- tibble::as_tibble(dataset, rownames = "row_attribute")
-      tidyr::pivot_longer(tib, cols = -row_attribute, names_to = sample_name_col) %>%
-        dplyr::left_join(meta_factors)
-    })
-    
     density_plot_obj <- reactive({
       
-      n_to_plot <- length(unique(data_to_plot()[[input$select_variable]]))
+      n_to_plot <- length(unique(data_to_plot[[input$select_variable]]))
       
-      assertthat::assert_that(
-        ncol(dataset) == length(unique(data_to_plot()$sample_name)),
-        msg = "unexpected number of samples for density plot"
-      )
-      density_plot(data_to_plot(), input$select_variable, n_to_plot)
+      # assertthat::assert_that(
+      #   ncol(dataset) == length(unique(data_to_plot()$sample_name)),
+      #   msg = "unexpected number of samples for density plot"
+      # )
+      density_plot(data_to_plot, input$select_variable, n_to_plot)
     })
     
     output$plot <- renderPlot(density_plot_obj()) %>% bindCache(input$select_variable)
@@ -135,8 +121,6 @@ density_plot <- function(plotting_data, condition, n_samples){
   ggplot2::ggplot(plotting_data, ggplot2::aes(x = value, fill = .data[[condition]])) +
     ggplot2::geom_density(alpha = 0.5, size = 1) +
     ggplot2::ggtitle("\nDistribution of data values\n") +
-   # ggplot2::scale_fill_manual("#193b85") +
-    #ggplot2::scale_color_manual(values = c("#193b85", "#0e876d")) +
     ggplot2::scale_fill_manual(values = my_colours) +
     ggplot2::theme(
       legend.title = ggplot2::element_blank(),
