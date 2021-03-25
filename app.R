@@ -2,18 +2,9 @@
 # To deploy, run: rsconnect::deployApp()
 # Or use the blue button on top of this file
 
-#pkgload::load_all(export_all = FALSE, helpers = FALSE, attach_testthat = FALSE)
-#options("golem.app.prod" = TRUE)
-#options(shiny.reactlog = TRUE)
-
-#spex::run_app() # add parameters here (if any)
-
 library(shiny)
 library(magrittr)
 
-#pkgload::load_all(export_all = FALSE, helpers = FALSE, attach_testthat = FALSE)
-
-#metadata0 <- readRDS("inst/extdata/metaFem_edited.rds")
 metadata <- qs::qread("data/metadata.qs")
 dataset  <- readRDS("inst/extdata/femExpression2.rds")
 of_interest <- readRDS("inst/extdata/of_interest2.rds")
@@ -48,7 +39,6 @@ ui <- tagList(
     titlePanel(
       tags$img(
         src = "BI_logo_grey.png", 
-        #src = "bioinformatics_logo_square_small.png", 
         style="margin-top: -10px; padding-right:10px; padding-bottom:10px", 
         width = "80", 
         height = "85",
@@ -271,7 +261,6 @@ server <- function(input, output, session ) {
   })
   
   observeEvent(input$browser, browser())
-  
 }
 
 
