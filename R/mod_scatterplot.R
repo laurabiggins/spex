@@ -34,7 +34,7 @@ mod_scatterplot_ui <- function(id, meta_sum, measures_of_interest){
             label = "y axis", 
             choices = "" 
           ),
-          actionButton(ns("browser"), "browser"),
+          #actionButton(ns("browser"), "browser"),
           #br(),
           br(),
           downloadButton(ns("download_png"), "png"),

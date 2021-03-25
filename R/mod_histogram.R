@@ -32,8 +32,8 @@ mod_histogramUI <- function(id, meta_sum){
           ),
           br(),
           downloadButton(ns("download_png"), "png"),
-          downloadButton(ns("download_pdf"), "pdf"),
-          actionButton(ns("browser"), "browser")
+          downloadButton(ns("download_pdf"), "pdf")#,
+          #actionButton(ns("browser"), "browser")
         ),
         mainPanel(
           width = 8,
