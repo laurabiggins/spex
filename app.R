@@ -5,9 +5,13 @@
 library(shiny)
 library(magrittr)
 
-metadata <- qs::qread("data/metadata.qs")
-dataset  <- readRDS("inst/extdata/femExpression2.rds")
-of_interest <- readRDS("inst/extdata/of_interest2.rds")
+#data_folder <- paste0("inst/extdata/", "worm_femExpression", "/")
+data_folder <- paste0("inst/extdata/", "oximouse", "/")
+
+dataset  <- readRDS(paste0(data_folder, "dataset.rds"))
+metadata  <- readRDS(paste0(data_folder, "metadata.rds"))
+of_interest  <- readRDS(paste0(data_folder, "of_interest.rds"))
+
 sample_names <- "sample_name"
 measure_names <- rownames(dataset)
 bab_light_blue <- "#00aeef"
@@ -20,7 +24,8 @@ meta_factors <- metadata$meta_all %>%
 
 tib <- tibble::as_tibble(dataset, rownames = "row_attribute")
 long_data_tib <- tidyr::pivot_longer(tib, cols = -row_attribute, names_to = sample_names) %>%
- dplyr::left_join(meta_factors)
+  tidyr::drop_na() %>%
+  dplyr::left_join(meta_factors)
 
 
 ui <- tagList(
@@ -190,6 +195,8 @@ server <- function(input, output, session ) {
   
   measures_of_interest <- reactiveVal(of_interest)
   
+  data_loaded <- reactiveVal(FALSE)
+  
   # Data tab - the main dataset
   output$data_table <- DT::renderDataTable(
     dt_setup(data_values, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
@@ -200,9 +207,13 @@ server <- function(input, output, session ) {
   })
   
   output$meta_info2 <- renderText({
-    paste0("Variables are: ", 
-           paste0(names(metadata$meta_summary)[!names(metadata$meta_summary) %in% metadata$sample_name], collapse = ", "),
-           "."
+    paste0(
+      "Variables are: ", 
+      paste0(
+        names(metadata$meta_summary)[!names(metadata$meta_summary) %in% metadata$sample_name], 
+        collapse = ", "
+      ),
+      "."
     )
   })
   
