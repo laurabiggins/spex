@@ -5,8 +5,12 @@
 library(shiny)
 library(magrittr)
 
-#data_folder <- paste0("inst/extdata/", "worm_femExpression", "/")
-data_folder <- paste0("inst/extdata/", "oximouse", "/")
+data_location <- "inst/extdata/"
+folders <- basename(list.dirs(data_location))
+available_datasets <- folders[folders != "extdata"]
+
+data_folder <- paste0("inst/extdata/", "worm_femExpression", "/")
+#data_folder <- paste0("inst/extdata/", "oximouse", "/")
 
 dataset  <- readRDS(paste0(data_folder, "dataset.rds"))
 metadata  <- readRDS(paste0(data_folder, "metadata.rds"))
@@ -63,8 +67,8 @@ ui <- tagList(
             width = 3,
             selectInput(
               inputId = "choose_dataset",
-              label = "Choose dataset",
-              choices = c("to be populated", 2, 3),
+              label = NULL, #"Choose dataset",
+              choices = c("choose dataset", available_datasets),
             ),
             p("Explore your chosen dataset by using the tabs above."),
             p("Sample names and experimental conditions are shown in the metadata section."),
@@ -197,6 +201,9 @@ server <- function(input, output, session ) {
   
   data_loaded <- reactiveVal(FALSE)
   
+  chosen_dataset <- reactive(input$choose_dataset)
+  
+  
   # Data tab - the main dataset
   output$data_table <- DT::renderDataTable(
     dt_setup(data_values, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
@@ -247,7 +254,7 @@ server <- function(input, output, session ) {
   })
   
   
-  mod_histogramServer("hist", data_to_plot = long_data_tib)
+  mod_histogramServer("hist", data_to_plot = long_data_tib, chosen_dataset)
   
   mod_heatmap_server("heatmap", data_values, metadata$meta_summary, metadata$meta_all, 
                      sample_name_col = sample_names, of_interest = of_interest)

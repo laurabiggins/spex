@@ -31,9 +31,10 @@ mod_histogramUI <- function(id, meta_sum){
             choices = sort(names(meta_sum))
           ),
           br(),
+          textInput(ns("text"), label = NULL, value = "my piece of text"),
           downloadButton(ns("download_png"), "png"),
-          downloadButton(ns("download_pdf"), "pdf")#,
-          #actionButton(ns("browser"), "browser")
+          downloadButton(ns("download_pdf"), "pdf"),
+          actionButton(ns("browser"), "browser")
         ),
         mainPanel(
           width = 8,
@@ -63,11 +64,23 @@ mod_histogramUI <- function(id, meta_sum){
 #' histogram Server Function
 #'
 #' @noRd 
-mod_histogramServer <- function(id, data_to_plot, prefix = "") {
+mod_histogramServer <- function(id, data_to_plot, chosen_dataset, prefix = "") {
   moduleServer(id, function(input, output, session) {
       
     observeEvent(input$browser, browser())
 
+    # observeEvent( ?
+    #   updateSelectInput(
+    #     inputId = ns("select_variable"),
+    #     label = "select variable",
+    #     choices = sort(names(meta_sum))
+    #   ),
+    # )
+    
+    observeEvent(chosen_dataset(), {
+      updateTextInput(inputId = "text", value = paste0("dataset chosen = ", chosen_dataset()))
+    })
+    
     density_plot_obj <- reactive({
       
       n_to_plot <- length(unique(data_to_plot[[input$select_variable]]))
