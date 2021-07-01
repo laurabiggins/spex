@@ -88,8 +88,8 @@ mod_heatmap_server <- function(id, dataset, meta_sum, metadata, of_interest,
         filtered_meta <- dplyr::filter(metadata, class %in% c("AA", "DA", "OEA"))
         selected_samples <- dplyr::pull(filtered_meta, sample_name_col)
         # we're working with a matrix so can't do dplyr
-        matrix_columns <- colnames(dataset) %in% selected_samples
-        dataset[rownames(dataset) %in% genes_of_interest, matrix_columns]
+        matrix_columns <- colnames(dataset()) %in% selected_samples
+        dataset()[rownames(dataset()) %in% genes_of_interest, matrix_columns]
       })
       
       heatmap_obj <- reactive({

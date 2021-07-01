@@ -46,6 +46,7 @@ mod_histogramUI <- function(id, meta_sum){
         ) 
       )  
     ),
+    # so that the saved plot is the same size as the plot on the screen
     tags$script(
       "var myWidth = 0;
       $(document).on('shiny:connected', function(event) {
@@ -69,30 +70,32 @@ mod_histogramServer <- function(id, data_to_plot, chosen_dataset, prefix = "") {
       
     observeEvent(input$browser, browser())
 
-    # observeEvent( ?
-    #   updateSelectInput(
-    #     inputId = ns("select_variable"),
-    #     label = "select variable",
-    #     choices = sort(names(meta_sum))
-    #   ),
-    # )
-    
     observeEvent(chosen_dataset(), {
-      updateTextInput(inputId = "text", value = paste0("dataset chosen = ", chosen_dataset()))
+      updateTextInput(
+        inputId = "text", 
+        value = paste0("dataset chosen = ", chosen_dataset())
+      )
+      # updateSelectInput(
+      #   inputId = ns("select_variable"),
+      #   label = "select variable",
+      #   choices = sort(names(meta_sum))
+      # )
     })
     
     density_plot_obj <- reactive({
       
-      n_to_plot <- length(unique(data_to_plot[[input$select_variable]]))
+      n_to_plot <- length(unique(data_to_plot()[[input$select_variable]]))
       
       # assertthat::assert_that(
       #   ncol(dataset) == length(unique(data_to_plot()$sample_name)),
       #   msg = "unexpected number of samples for density plot"
       # )
-      density_plot(data_to_plot, input$select_variable, n_to_plot)
+      density_plot(data_to_plot(), input$select_variable, n_to_plot)
     })
     
-    output$plot <- renderPlot(density_plot_obj()) %>% bindCache(input$select_variable)
+    output$plot <- renderPlot({
+      density_plot_obj()
+    }) %>% bindCache(input$select_variable, chosen_dataset())
 
         
     output$download_png <- downloadHandler(

@@ -79,14 +79,16 @@ mod_scatterplot_ui <- function(id, meta_sum, measures_of_interest){
 #' 
 #'
 #' @noRd 
-mod_scatterplot_server <- function(id, long_data_tib, meta_sum, sample_name_col, sets_of_interest, prefix = "", session) {
+mod_scatterplot_server <- function(id, long_data_tib, meta_sum, sample_name_col, sets_of_interest, chosen_dataset, prefix = "", session) {
   
   moduleServer(id, function(input, output, session) {
     
     # Made this a reactive so that it's not called on initialisation
     #tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
     
-    x_y_choices <- reactive(get_choices(input$select_condition, meta_sum)) %>% bindCache(input$select_condition)
+    x_y_choices <- reactive({
+      get_choices(input$select_condition, meta_sum)
+    }) %>% bindCache(chosen_dataset(), input$select_condition)
 
     label_highlighted <- reactiveVal(FALSE)
     
@@ -115,8 +117,8 @@ mod_scatterplot_server <- function(id, long_data_tib, meta_sum, sample_name_col,
     observe({
       #if(input$x_axis %in% metadata[[input$select_condition]] &
       #  input$y_axis %in% metadata[[input$select_condition]]){
-      if(input$x_axis %in% long_data_tib[[input$select_condition]] &
-         input$y_axis %in% long_data_tib[[input$select_condition]]){
+      if(input$x_axis %in% long_data_tib()[[input$select_condition]] &
+         input$y_axis %in% long_data_tib()[[input$select_condition]]){
           rv$xvar <- input$x_axis
           rv$yvar <- input$y_axis
           rv$condition <- input$select_condition
@@ -141,7 +143,7 @@ mod_scatterplot_server <- function(id, long_data_tib, meta_sum, sample_name_col,
 
     selected_data <- reactive({
       select_by_group(
-        tibble_dataset = long_data_tib,
+        tibble_dataset = long_data_tib(),
         condition = rv$condition,
         sample_name_col = sample_name_col,
         x_var = rv$xvar,
@@ -171,6 +173,7 @@ mod_scatterplot_server <- function(id, long_data_tib, meta_sum, sample_name_col,
       input$y_axis, 
       input$set_to_highlight,
       input$highlight_genes, 
+      chosen_dataset(),
       label_highlighted()
     )
 

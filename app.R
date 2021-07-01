@@ -70,6 +70,8 @@ ui <- tagList(
               label = NULL, #"Choose dataset",
               choices = c("choose dataset", available_datasets),
             ),
+            br(),
+            actionButton(inputId = "load_data", label = "load dataset"),
             p("Explore your chosen dataset by using the tabs above."),
             p("Sample names and experimental conditions are shown in the metadata section."),
             p("The data tab shows the whole dataset, which can be downloaded if required."),
@@ -77,9 +79,9 @@ ui <- tagList(
           ),
           mainPanel(
             br(),
-            titlePanel(h1("dataset name", align = "center")),
+            h1(textOutput(outputId = "dataset_name"), align = "center"),
             br(),
-            h5("Information about the dataset and publication link"),
+            h5(textOutput(outputId = "dataset_info")),
             br(),br(),br(),
             br(),br(),br(),br(),br(),br(),br(),
             h6("For more information about work carried out at the Babraham Institute
@@ -119,8 +121,8 @@ ui <- tagList(
               conditionalPanel(
                 condition = "input.show_meta == 1",
                 DT::dataTableOutput("meta_table")
-              )#,
-              #actionButton("browser", "browser")
+              ),
+              actionButton("browser", "browser")
             )
           ),
           column(
@@ -195,18 +197,73 @@ ui <- tagList(
 
 server <- function(input, output, session ) {
   
-  data_values <- dataset
+  #data_values <- dataset
+  
+  data_values <- reactiveVal(dataset)
   
   measures_of_interest <- reactiveVal(of_interest)
   
   data_loaded <- reactiveVal(FALSE)
   
+  long_data_tib <- reactiveVal(long_data_tib)
+
   chosen_dataset <- reactive(input$choose_dataset)
+  
+    
+  observeEvent(input$load_data, {
+    
+    data_folder <- paste0(data_location, input$choose_dataset, "/")
+    
+    dataset  <- readRDS(paste0(data_folder, "dataset.rds"))
+    #metadata_processed  <- readRDS(paste0(data_folder, "metadata.rds"))
+    #of_interest  <- readRDS(paste0(data_folder, "of_interest.rds"))
+    
+    data_values(dataset)
+    
+    # metadata(metadata_processed)
+    # measures_of_interest(of_interest)
+    # measure_names(rownames(dataset))
+    # 
+    # #!! set all of these as reactive values
+    # 
+    # meta_factors <- metadata_processed$meta_all %>%
+    #   dplyr::mutate_if(is.character, factor) %>%
+    #   dplyr::mutate_if(is.double, factor) %>%
+    #   dplyr::mutate_if(is.integer, factor)
+    
+    tib <- tibble::as_tibble(dataset, rownames = "row_attribute")
+    long_data_tibble <- tib %>% 
+      tidyr::pivot_longer(cols = -row_attribute, names_to = sample_names) %>%
+      tidyr::drop_na() %>%
+      dplyr::left_join(meta_factors)
+    
+    long_data_tib(long_data_tibble)
+    
+    # updateSelectInput(
+    #   inputId = "selected_set",
+    #   label = "select set",
+    #   choices = names(of_interest)
+    # )
+  })
+  
+  output$dataset_name <- renderText({
+    chosen_dataset()
+  })
+  
+  output$dataset_info <- renderText({
+    
+    if(input$choose_dataset == "choose dataset") {
+      "Choose a dataset from the dropdown on the left"
+    } else {
+      "populate this with an info file"
+    }
+    
+  })
   
   
   # Data tab - the main dataset
   output$data_table <- DT::renderDataTable(
-    dt_setup(data_values, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
+    dt_setup(data_values(), n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
   )
   
   output$meta_info1 <- renderText({
@@ -264,10 +321,16 @@ server <- function(input, output, session ) {
     long_data_tib = long_data_tib,
     meta_sum = metadata$meta_summary, 
     sample_name_col = sample_names, 
-    sets_of_interest = measures_of_interest
+    sets_of_interest = measures_of_interest,
+    chosen_dataset = chosen_dataset
   )
   
-  mod_violinplot_server("violinplot", long_data_tib, sample_name_col = sample_names)
+  mod_violinplot_server(
+    "violinplot", 
+    long_data_tib, 
+    chosen_dataset = chosen_dataset, 
+    sample_name_col = sample_names
+  )
   
   filter_results <- mod_name_filter_server("name_filter", measure_names, of_interest)
   
