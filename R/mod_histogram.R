@@ -65,21 +65,24 @@ mod_histogramUI <- function(id, meta_sum){
 #' histogram Server Function
 #'
 #' @noRd 
-mod_histogramServer <- function(id, data_to_plot, chosen_dataset, prefix = "") {
+mod_histogramServer <- function(id, data_to_plot, chosen_dataset, meta, prefix = "") {
   moduleServer(id, function(input, output, session) {
       
     observeEvent(input$browser, browser())
 
     observeEvent(chosen_dataset(), {
+
+      new_choices <- sort(names(meta()$meta_summary))
+      
+      updateSelectInput(
+        inputId = "select_variable",
+        choices = new_choices
+      )
+      
       updateTextInput(
         inputId = "text", 
-        value = paste0("dataset chosen = ", chosen_dataset())
+        value = paste0("dataset = ", chosen_dataset())
       )
-      # updateSelectInput(
-      #   inputId = ns("select_variable"),
-      #   label = "select variable",
-      #   choices = sort(names(meta_sum))
-      # )
     })
     
     density_plot_obj <- reactive({
@@ -132,6 +135,8 @@ mod_histogramServer <- function(id, data_to_plot, chosen_dataset, prefix = "") {
 
 density_plot <- function(plotting_data, condition, n_samples){
  
+  req(condition %in% colnames(plotting_data))
+  
   my_colours <- grDevices::colorRampPalette(c("#530c82", "#b9c9c9", "#024f4b"))(n_samples)
   
   ggplot2::ggplot(plotting_data, ggplot2::aes(x = value, fill = .data[[condition]])) +
