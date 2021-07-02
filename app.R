@@ -215,36 +215,41 @@ server <- function(input, output, session ) {
     
   observeEvent(input$load_data, {
     
-    data_folder <- paste0(data_location, input$choose_dataset, "/")
+    if(input$choose_dataset != "choose dataset") {
     
-    dataset  <- readRDS(paste0(data_folder, "dataset.rds"))
-    metadata_processed  <- readRDS(paste0(data_folder, "metadata.rds"))
-    of_interest  <- readRDS(paste0(data_folder, "of_interest.rds"))
-    
-    data_values(dataset)
-    
-    metadata(metadata_processed)
-    measures_of_interest(of_interest)
-    # measure_names(rownames(dataset))
-
-    meta_factors <- metadata_processed$meta_all %>%
-      dplyr::mutate_if(is.character, factor) %>%
-      dplyr::mutate_if(is.double, factor) %>%
-      dplyr::mutate_if(is.integer, factor)
-    
-    tib <- tibble::as_tibble(dataset, rownames = "row_attribute")
-    long_data_tibble <- tib %>% 
-      tidyr::pivot_longer(cols = -row_attribute, names_to = sample_names) %>%
-      tidyr::drop_na() %>%
-      dplyr::left_join(meta_factors)
-    
-    long_data_tib(long_data_tibble)
-    
-    # updateSelectInput(
-    #   inputId = "selected_set",
-    #   label = "select set",
-    #   choices = names(of_interest)
-    # )
+      # need checks here that the locations exist
+      
+      data_folder <- paste0(data_location, input$choose_dataset, "/")
+      
+      dataset  <- readRDS(paste0(data_folder, "dataset.rds"))
+      metadata_processed  <- readRDS(paste0(data_folder, "metadata.rds"))
+      of_interest  <- readRDS(paste0(data_folder, "of_interest.rds"))
+      
+      data_values(dataset)
+      
+      metadata(metadata_processed)
+      measures_of_interest(of_interest)
+      # measure_names(rownames(dataset))
+  
+      meta_factors <- metadata_processed$meta_all %>%
+        dplyr::mutate_if(is.character, factor) %>%
+        dplyr::mutate_if(is.double, factor) %>%
+        dplyr::mutate_if(is.integer, factor)
+      
+      tib <- tibble::as_tibble(dataset, rownames = "row_attribute")
+      long_data_tibble <- tib %>% 
+        tidyr::pivot_longer(cols = -row_attribute, names_to = sample_names) %>%
+        tidyr::drop_na() %>%
+        dplyr::left_join(meta_factors)
+      
+      long_data_tib(long_data_tibble)
+      
+      # updateSelectInput(
+      #   inputId = "selected_set",
+      #   label = "select set",
+      #   choices = names(of_interest)
+      # )
+    }
   })
   
   output$dataset_name <- renderText({
@@ -313,28 +318,29 @@ server <- function(input, output, session ) {
   
   
   mod_histogramServer(
-    "hist", 
-    data_to_plot = long_data_tib, 
-    meta = metadata, 
+    "hist",
+    data_to_plot = long_data_tib,
+    meta = metadata,
     chosen_dataset
   )
   
   #mod_heatmap_server("heatmap", data_values, metadata()$meta_summary, metadata()$meta_all, 
    #                  sample_name_col = sample_names, of_interest = of_interest)
   
-  # mod_scatterplot_server(
-  #   "scatter", 
-  #   long_data_tib = long_data_tib,
-  #   meta_sum = metadata()$meta_summary, 
-  #   sample_name_col = sample_names, 
-  #   sets_of_interest = measures_of_interest,
-  #   chosen_dataset = chosen_dataset
-  # )
+  mod_scatterplot_server(
+    "scatter",
+    long_data_tib = long_data_tib,
+    metadata = metadata,
+    sample_name_col = sample_names,
+    sets_of_interest = measures_of_interest,
+    chosen_dataset = chosen_dataset
+  )
   
   mod_violinplot_server(
     "violinplot", 
     long_data_tib, 
     chosen_dataset = chosen_dataset, 
+    metadata = metadata,
     sample_name_col = sample_names
   )
   

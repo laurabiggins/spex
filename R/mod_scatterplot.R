@@ -34,7 +34,7 @@ mod_scatterplot_ui <- function(id, meta_sum, measures_of_interest){
             label = "y axis", 
             choices = "" 
           ),
-          #actionButton(ns("browser"), "browser"),
+          actionButton(ns("browser"), "browser"),
           #br(),
           br(),
           downloadButton(ns("download_png"), "png"),
@@ -79,15 +79,23 @@ mod_scatterplot_ui <- function(id, meta_sum, measures_of_interest){
 #' 
 #'
 #' @noRd 
-mod_scatterplot_server <- function(id, long_data_tib, meta_sum, sample_name_col, sets_of_interest, chosen_dataset, prefix = "", session) {
+mod_scatterplot_server <- function(id, long_data_tib, metadata, sample_name_col, sets_of_interest, chosen_dataset, prefix = "", session) {
   
   moduleServer(id, function(input, output, session) {
     
     # Made this a reactive so that it's not called on initialisation
     #tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
     
+    observeEvent(chosen_dataset(), {
+      
+      updateSelectInput(
+        inputId = "select_condition",
+        choices = sort(names(metadata()$meta_summary))
+      )
+    })
+    
     x_y_choices <- reactive({
-      get_choices(input$select_condition, meta_sum)
+      get_choices(input$select_condition, metadata()$meta_summary)
     }) %>% bindCache(chosen_dataset(), input$select_condition)
 
     label_highlighted <- reactiveVal(FALSE)

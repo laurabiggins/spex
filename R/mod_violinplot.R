@@ -57,17 +57,24 @@ mod_violinplot_ui <- function(id, meta_sum){
 #' scatterplot Server Function
 #'
 #' @noRd 
-mod_violinplot_server <- function(id, long_data_tib, sample_name_col, chosen_dataset, prefix = "", session) {
+mod_violinplot_server <- function(id, long_data_tib, metadata, sample_name_col, chosen_dataset, prefix = "", session) {
   
   moduleServer(id, function(input, output, session) {
 
     violin_obj <- reactive({
       violinplot(long_data_tib(), input$select_condition, boxplot = input$add_boxplot)
     })
-    
+        
     output$plot <- renderPlot({
       violin_obj()
-    }) %>% bindCache(input$select_condition, input$add_boxplot, chosen_dataset)
+    }) %>% bindCache(input$select_condition, input$add_boxplot, chosen_dataset())
+    
+    observeEvent(chosen_dataset(), {
+      updateSelectInput(
+        inputId = "select_condition",
+        choices = sort(names(metadata()$meta_summary))
+      )
+    })
     
     output$download_png <- downloadHandler(
       filename = function() {
