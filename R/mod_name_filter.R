@@ -91,8 +91,8 @@ mod_name_filter_ui <- function(id, measure_names){
           textOutput(ns("add_set_msg")),
           p("To view set information, go to the metadata tab"),
           br(),
-          br()#,
-          #actionButton(ns("browser"), "browser")
+          br(),
+          actionButton(ns("browser"), "browser")
         )
       )
     ),
@@ -108,7 +108,7 @@ mod_name_filter_ui <- function(id, measure_names){
 }
 
 
-mod_name_filter_server <- function(id, measure_names, of_interest){
+mod_name_filter_server <- function(id, of_interest, measure_names, chosen_dataset){
   
   moduleServer(id, function(input, output, session) {
     
@@ -119,14 +119,24 @@ mod_name_filter_server <- function(id, measure_names, of_interest){
     
     observeEvent(input$browser, browser())
     
-    sets_of_interest <- reactiveVal(of_interest)
+    observeEvent(measure_names(), {
+
+      shinyWidgets::updatePickerInput(
+        session = session,
+        inputId = "measure_selector",
+        choices = measure_names()
+      )
+    })
+      
+    #sets_of_interest <- reactiveVal(of_interest)
+    sets_of_interest <- of_interest
     
     rv <- reactiveValues()
     
     set_msg <- reactiveVal()
     
     matched_names <- reactive({
-      match_names(rv$entered_names, measure_names)
+      match_names(rv$entered_names, measure_names())
     })
     
     observeEvent(input$confirm, {
