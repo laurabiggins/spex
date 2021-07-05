@@ -7,7 +7,7 @@
 #' @noRd 
 #'
 #' @importFrom shiny NS tagList 
-mod_violinplot_ui <- function(id, meta_sum){
+mod_violinplot_ui <- function(id){#, meta_sum){
   
   ns <- NS(id)
   
@@ -21,14 +21,14 @@ mod_violinplot_ui <- function(id, meta_sum){
           selectInput(
             inputId = ns("select_condition"),
             label = "select variable",
-            choices = sort(names(meta_sum)),
+            choices = "",
           ),
           br(),
           checkboxInput(ns("add_boxplot"), "add boxplot"),
           br(),
           downloadButton(ns("download_png"), "png"),
-          downloadButton(ns("download_pdf"), "pdf")#,
-          #actionButton(ns("browser"), "browser")
+          downloadButton(ns("download_pdf"), "pdf"),
+          actionButton(ns("browser"), "browser")
         ),
         mainPanel(
           width = 8,
@@ -62,7 +62,8 @@ mod_violinplot_server <- function(id, long_data_tib, metadata, sample_name_col, 
   moduleServer(id, function(input, output, session) {
 
     violin_obj <- reactive({
-      violinplot(long_data_tib(), input$select_condition, boxplot = input$add_boxplot)
+      req(input$select_condition)
+      violinplot(long_data_tib, input$select_condition, boxplot = input$add_boxplot)
     })
         
     output$plot <- renderPlot({
@@ -72,7 +73,7 @@ mod_violinplot_server <- function(id, long_data_tib, metadata, sample_name_col, 
     observeEvent(chosen_dataset(), {
       updateSelectInput(
         inputId = "select_condition",
-        choices = sort(names(metadata()$meta_summary))
+        choices = sort(names(metadata$meta_summary))
       )
     })
     

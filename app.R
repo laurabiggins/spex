@@ -166,7 +166,7 @@ ui <- tagList(
           tabPanel("histogram", mod_histogramUI("hist", meta1$meta_sum)),
           tabPanel("scatterplot", mod_scatterplot_ui("scatter", meta1$meta_sum, of_interest)),
           tabPanel("heatmap", mod_heatmap_ui("heatmap", meta1$meta_sum)),
-          tabPanel("violinplot", mod_violinplot_ui("violinplot", meta1$meta_sum)),
+          tabPanel("violinplot", mod_violinplot_ui("violinplot")),
           widths = c(3,9)
         )
       ),
@@ -197,21 +197,28 @@ ui <- tagList(
 
 server <- function(input, output, session ) {
   
-  #data_values <- dataset
+
+  long_data_tib <- reactiveVal(long_data_tib)
   
-  data_values <- reactiveVal(dataset)
+  measure_names <- reactiveVal(measure_names)
   
   measures_of_interest <- reactiveVal(of_interest)
   
-  data_loaded <- reactiveVal(FALSE)
-  
-  long_data_tib <- reactiveVal(long_data_tib)
-
   metadata <- reactiveVal(meta1)
   
+
+  data_loaded <- reactiveVal(FALSE)
+  
   chosen_dataset <- eventReactive(input$load_data, input$choose_dataset)
-  
-  
+
+    
+  rv <- reactiveValues(
+    dataset = NULL, # the currently loaded dataset
+    long_data_tib = NULL, # tidied long version of dataset
+    measure_names = NULL, # all the row (gene) names
+    measures_of_interest = NULL, # sets of ids of interest, can be loaded upfront and added to by filtering
+    metadata = NULL # list of accompanying metadata
+  )
     
   observeEvent(input$load_data, {
     
@@ -225,12 +232,15 @@ server <- function(input, output, session ) {
       metadata_processed  <- readRDS(paste0(data_folder, "metadata.rds"))
       of_interest  <- readRDS(paste0(data_folder, "of_interest.rds"))
       
-      data_values(dataset)
-      
       metadata(metadata_processed)
       measures_of_interest(of_interest)
-      # measure_names(rownames(dataset))
+      measure_names(rownames(dataset))
   
+      rv$dataset <- dataset
+      rv$metadata <- metadata_processed
+      rv$measure_names <- rownames(dataset)
+      rv$measures_of_interest <- of_interest
+      
       meta_factors <- metadata_processed$meta_all %>%
         dplyr::mutate_if(is.character, factor) %>%
         dplyr::mutate_if(is.double, factor) %>%
@@ -243,6 +253,7 @@ server <- function(input, output, session ) {
         dplyr::left_join(meta_factors)
       
       long_data_tib(long_data_tibble)
+      rv$long_data_tib <- long_data_tibble
       
       # updateSelectInput(
       #   inputId = "selected_set",
@@ -268,9 +279,11 @@ server <- function(input, output, session ) {
   
   
   # Data tab - the main dataset
-  output$data_table <- DT::renderDataTable(
-    dt_setup(data_values(), n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
-  )
+  output$data_table <- DT::renderDataTable({
+    
+    req(rv$dataset)
+    dt_setup(rv$dataset, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
+  })
   
   output$meta_info1 <- renderText({
     paste0("The dataset contains ", nrow(metadata()$meta_summary[[sample_names]]), " samples.")
@@ -338,13 +351,19 @@ server <- function(input, output, session ) {
   
   mod_violinplot_server(
     "violinplot", 
-    long_data_tib, 
+    #long_data_tib = long_data_tib,
+    long_data_tib = rv$long_data_tib,
     chosen_dataset = chosen_dataset, 
-    metadata = metadata,
+    metadata = rv$metadata,
     sample_name_col = sample_names
   )
   
-  filter_results <- mod_name_filter_server("name_filter", measure_names, of_interest)
+  filter_results <- mod_name_filter_server(
+    "name_filter", 
+    measure_names, 
+    of_interest = measures_of_interest,
+    chosen_dataset = chosen_dataset
+  )
   
   observeEvent(filter_results(), {
     
