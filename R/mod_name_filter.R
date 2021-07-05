@@ -128,7 +128,6 @@ mod_name_filter_server <- function(id, of_interest, measure_names, chosen_datase
       )
     })
       
-    #sets_of_interest <- reactiveVal(of_interest)
     sets_of_interest <- of_interest
     
     rv <- reactiveValues()
@@ -234,8 +233,6 @@ mod_name_filter_server <- function(id, of_interest, measure_names, chosen_datase
         sets_of_interest(new_sets)
         set_msg(paste0("Added ", this_set_name, "."))
         
-        #sets_of_interest(new_sets())
-        #set_msg(paste0("Added ", this_set_name(), "."))
       }  
     })
 
