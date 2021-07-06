@@ -13,7 +13,7 @@
 #  
 #   )
 # }
-mod_histogramUI <- function(id, meta_sum){
+mod_histogramUI <- function(id){
   
   ns <- NS(id)
   
@@ -28,7 +28,7 @@ mod_histogramUI <- function(id, meta_sum){
           selectInput(
             inputId = ns("select_variable"),
             label = "select variable",
-            choices = sort(names(meta_sum))
+            choices = ""
           ),
           br(),
           textInput(ns("text"), label = NULL, value = "my piece of text"),
@@ -86,6 +86,8 @@ mod_histogramServer <- function(id, data_to_plot, chosen_dataset, meta, prefix =
     })
     
     density_plot_obj <- reactive({
+      
+      req(input$select_variable)
       
       n_to_plot <- length(unique(data_to_plot()[[input$select_variable]]))
       

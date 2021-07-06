@@ -7,7 +7,7 @@
 #' @noRd 
 #'
 #' @importFrom shiny NS tagList 
-mod_scatterplot_ui <- function(id, meta_sum, measures_of_interest){
+mod_scatterplot_ui <- function(id){
   
   ns <- NS(id)
   
@@ -22,7 +22,7 @@ mod_scatterplot_ui <- function(id, meta_sum, measures_of_interest){
           selectInput(
             inputId = ns("select_condition"),
             label = "select variable",
-            choices = sort(names(meta_sum))
+            choices = ""
           ),
           selectInput(
             ns("x_axis"), 
@@ -60,7 +60,7 @@ mod_scatterplot_ui <- function(id, meta_sum, measures_of_interest){
               selectInput(
                 ns("set_to_highlight"),
                 "choose set",
-                choices = names(measures_of_interest)
+                choices = ""
               )
             ),
             column(
@@ -79,7 +79,7 @@ mod_scatterplot_ui <- function(id, meta_sum, measures_of_interest){
 #' 
 #'
 #' @noRd 
-mod_scatterplot_server <- function(id, long_data_tib, metadata, sample_name_col, sets_of_interest, chosen_dataset, prefix = "", session) {
+mod_scatterplot_server <- function(id, data_to_plot, metadata, sample_name_col, sets_of_interest, chosen_dataset, prefix = "", session) {
   
   moduleServer(id, function(input, output, session) {
     
@@ -98,43 +98,8 @@ mod_scatterplot_server <- function(id, long_data_tib, metadata, sample_name_col,
       get_choices(input$select_condition, metadata()$meta_summary)
     }) %>% bindCache(chosen_dataset(), input$select_condition)
 
-    label_highlighted <- reactiveVal(FALSE)
-    
-    shinyjs::disable("label_highlights")
-    
-    rv <- reactiveValues()
-    
-    observeEvent(sets_of_interest(), {
-      updateSelectInput(session, "set_to_highlight", choices = names(sets_of_interest()))
-    })
-    
-    observeEvent(input$highlight_genes, {
-      if(input$highlight_genes) {
-        shinyjs::enable("label_highlights")
-      } else {
-        shinyjs::disable("label_highlights")
-        updateCheckboxInput(session, "label_highlights", "show labels", value = FALSE)
-      }  
-    })
-    
-    observeEvent(input$label_highlights, label_highlighted(input$label_highlights))
-
-    # There was an issue with the updating of the drop downs - there were some times 
-    # when the variable type didn't match the x and y vars, because it hadn't had time to.
-    # This seems to fix it.
-    observe({
-      #if(input$x_axis %in% metadata[[input$select_condition]] &
-      #  input$y_axis %in% metadata[[input$select_condition]]){
-      if(input$x_axis %in% long_data_tib()[[input$select_condition]] &
-         input$y_axis %in% long_data_tib()[[input$select_condition]]){
-          rv$xvar <- input$x_axis
-          rv$yvar <- input$y_axis
-          rv$condition <- input$select_condition
-      }
-    })
-    
-    observeEvent(input$select_condition, {
-      req(x_y_choices())
+    observeEvent(x_y_choices(), {
+      #req(x_y_choices())
       req(length(x_y_choices()) >= 2)
       updateSelectInput(
         inputId = "x_axis",
@@ -148,14 +113,40 @@ mod_scatterplot_server <- function(id, long_data_tib, metadata, sample_name_col,
         selected = x_y_choices()[2]
       )
     })
+    
+    label_highlighted <- reactiveVal(FALSE)
+    
+    shinyjs::disable("label_highlights")
+    
+    rv <- reactiveValues()
+    
+    observeEvent(sets_of_interest(), {
+      updateSelectInput(
+        session, 
+        "set_to_highlight", 
+        choices = names(sets_of_interest())
+      )
+    })
+    
+    observeEvent(input$highlight_genes, {
+      if(input$highlight_genes) {
+        shinyjs::enable("label_highlights")
+      } else {
+        shinyjs::disable("label_highlights")
+        updateCheckboxInput(session, "label_highlights", "show labels", value = FALSE)
+      }  
+    })
+    
+    observeEvent(input$label_highlights, label_highlighted(input$label_highlights))
 
     selected_data <- reactive({
+      req(data_to_plot())#, rv$condition, rv$xvar, rv$yvar)
       select_by_group(
-        tibble_dataset = long_data_tib(),
-        condition = rv$condition,
+        tibble_dataset = data_to_plot(),
+        condition = input$select_condition,
         sample_name_col = sample_name_col,
-        x_var = rv$xvar,
-        y_var = rv$yvar
+        x_var = input$x_axis,
+        y_var = input$y_axis
       )
     })
 
@@ -203,6 +194,20 @@ mod_scatterplot_server <- function(id, long_data_tib, metadata, sample_name_col,
         ggplot2::ggsave(file, scatter_plot_object(), device = "pdf")
       }
     )
+    
+    # There was an issue with the updating of the drop downs - there were some times 
+    # when the variable type didn't match the x and y vars, because it hadn't had time to.
+    # This seems to fix it.
+    # observe({
+    #   #if(input$x_axis %in% metadata[[input$select_condition]] &
+    #   #  input$y_axis %in% metadata[[input$select_condition]]){
+    #   if(input$x_axis %in% data_to_plot[[input$select_condition]] &
+    #      input$y_axis %in% data_to_plot[[input$select_condition]]){
+    #       rv$xvar <- input$x_axis
+    #       rv$yvar <- input$y_axis
+    #       rv$condition <- input$select_condition
+    #   }
+    # })
     
     observeEvent(input$browser, browser())
   })

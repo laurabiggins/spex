@@ -163,9 +163,9 @@ ui <- tagList(
         br(),
         navlistPanel(
           "plot type",
-          tabPanel("histogram", mod_histogramUI("hist", meta1$meta_sum)),
-          tabPanel("scatterplot", mod_scatterplot_ui("scatter", meta1$meta_sum, of_interest)),
-          tabPanel("heatmap", mod_heatmap_ui("heatmap", meta1$meta_sum)),
+          tabPanel("histogram", mod_histogramUI("hist")),
+          tabPanel("scatterplot", mod_scatterplot_ui("scatter")),
+          tabPanel("heatmap", mod_heatmap_ui("heatmap")),
           tabPanel("violinplot", mod_violinplot_ui("violinplot")),
           widths = c(3,9)
         )
@@ -173,7 +173,7 @@ ui <- tagList(
       tabPanel(
         "filter",
         br(),
-        mod_name_filter_ui("name_filter", measure_names)
+        mod_name_filter_ui("name_filter")
       )
     ),
     br(),
@@ -198,15 +198,14 @@ ui <- tagList(
 server <- function(input, output, session ) {
   
 
-  long_data_tib <- reactiveVal(long_data_tib)
+  #long_data_tib <- reactiveVal(long_data_tib)
   
   measure_names <- reactiveVal(measure_names)
   
   measures_of_interest <- reactiveVal(of_interest)
   
-  metadata <- reactiveVal(meta1)
+  #metadata <- reactiveVal(meta1)
   
-
   data_loaded <- reactiveVal(FALSE)
   
   chosen_dataset <- eventReactive(input$load_data, input$choose_dataset)
@@ -232,7 +231,7 @@ server <- function(input, output, session ) {
       metadata_processed  <- readRDS(paste0(data_folder, "metadata.rds"))
       of_interest  <- readRDS(paste0(data_folder, "of_interest.rds"))
       
-      metadata(metadata_processed)
+      #metadata(metadata_processed)
       measures_of_interest(of_interest)
       measure_names(rownames(dataset))
   
@@ -252,7 +251,7 @@ server <- function(input, output, session ) {
         tidyr::drop_na() %>%
         dplyr::left_join(meta_factors)
       
-      long_data_tib(long_data_tibble)
+      #long_data_tib(long_data_tibble)
       rv$long_data_tib <- long_data_tibble
       
       # updateSelectInput(
@@ -286,14 +285,14 @@ server <- function(input, output, session ) {
   })
   
   output$meta_info1 <- renderText({
-    paste0("The dataset contains ", nrow(metadata()$meta_summary[[sample_names]]), " samples.")
+    paste0("The dataset contains ", nrow(rv$metadata$meta_summary[[sample_names]]), " samples.")
   })
   
   output$meta_info2 <- renderText({
     paste0(
       "Variables are: ", 
       paste0(
-        names(metadata()$meta_summary)[!names(metadata()$meta_summary) %in% metadata()$sample_name], 
+        names(rv$metadata$meta_summary)[!names(rv$metadata$meta_summary) %in% rv$metadata$sample_name], 
         collapse = ", "
       ),
       "."
@@ -301,7 +300,7 @@ server <- function(input, output, session ) {
   })
   
   output$meta_info3 <- renderTable({
-    tibble::enframe(sapply(metadata()$meta_summary, nrow))
+    tibble::enframe(sapply(rv$metadata$meta_summary, nrow))
   }, colnames = FALSE)
   
   output$set_info1 <- renderText({
@@ -321,40 +320,47 @@ server <- function(input, output, session ) {
     measures_of_interest()[[input$selected_set]]
   })
   
-  output$meta_table <- DT::renderDataTable(dt_setup(metadata()$meta_all, n_rows = 20))
+  output$meta_table <- DT::renderDataTable({
+    dt_setup(rv$metadata$meta_all, n_rows = 20)
+  })
   
   output$meta_summary <- renderTable({
     req(input$selected_condition)
-    req(metadata()$meta_summary)
-    metadata()$meta_summary[[input$selected_condition]]
+    req(rv$metadata$meta_summary)
+    rv$metadata$meta_summary[[input$selected_condition]]
   })
-  
   
   mod_histogramServer(
     "hist",
-    data_to_plot = long_data_tib,
-    meta = metadata,
+    data_to_plot = reactive(rv$long_data_tib),
+    meta = reactive(rv$metadata),
     chosen_dataset
   )
   
-  #mod_heatmap_server("heatmap", data_values, metadata()$meta_summary, metadata()$meta_all, 
-   #                  sample_name_col = sample_names, of_interest = of_interest)
-  
+  # mod_heatmap_server(
+  #   "heatmap", 
+  #   rv$dataset,
+  #   metadata = metadata,
+  #   #metadata()$meta_summary, 
+  #   #metadata()$meta_all, 
+  #   sample_name_col = sample_names, 
+  #   of_interest = measures_of_interest
+  # )
+
   mod_scatterplot_server(
     "scatter",
-    long_data_tib = long_data_tib,
-    metadata = metadata,
+    data_to_plot = reactive(rv$long_data_tib),
+    metadata = reactive(rv$metadata),
     sample_name_col = sample_names,
-    sets_of_interest = measures_of_interest,
+    sets_of_interest = reactive(rv$measures_of_interest),
     chosen_dataset = chosen_dataset
   )
   
   mod_violinplot_server(
     "violinplot", 
-    #long_data_tib = long_data_tib,
-    long_data_tib = rv$long_data_tib,
+    long_data_tib = reactive(rv$long_data_tib),
     chosen_dataset = chosen_dataset, 
-    metadata = rv$metadata,
+    metadata = reactive(rv$metadata),
     sample_name_col = sample_names
   )
   

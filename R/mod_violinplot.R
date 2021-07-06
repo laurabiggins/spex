@@ -63,7 +63,7 @@ mod_violinplot_server <- function(id, long_data_tib, metadata, sample_name_col, 
 
     violin_obj <- reactive({
       req(input$select_condition)
-      violinplot(long_data_tib, input$select_condition, boxplot = input$add_boxplot)
+      violinplot(long_data_tib(), input$select_condition, boxplot = input$add_boxplot)
     })
         
     output$plot <- renderPlot({
@@ -73,7 +73,7 @@ mod_violinplot_server <- function(id, long_data_tib, metadata, sample_name_col, 
     observeEvent(chosen_dataset(), {
       updateSelectInput(
         inputId = "select_condition",
-        choices = sort(names(metadata$meta_summary))
+        choices = sort(names(metadata()$meta_summary))
       )
     })
     

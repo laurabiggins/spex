@@ -7,7 +7,7 @@
 #' @noRd 
 #'
 #' @importFrom shiny NS tagList 
-mod_name_filter_ui <- function(id, measure_names){
+mod_name_filter_ui <- function(id){
   
   ns <- NS(id)
   tagList(
@@ -54,7 +54,7 @@ mod_name_filter_ui <- function(id, measure_names){
               shinyWidgets::pickerInput(
                 inputId = ns("measure_selector"),
                 label = NULL,
-                choices = measure_names,
+                choices = "",
                 multiple = TRUE,
                 options = shinyWidgets::pickerOptions(
                   actionsBox = TRUE,
