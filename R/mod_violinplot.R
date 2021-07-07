@@ -62,7 +62,8 @@ mod_violinplot_server <- function(id, long_data_tib, metadata, sample_name_col, 
   moduleServer(id, function(input, output, session) {
 
     violin_obj <- reactive({
-      req(input$select_condition)
+      validate(need(isTruthy(long_data_tib()), "Please load a dataset reactive")) # this doesn't get called
+      req(input$select_condition, long_data_tib())
       violinplot(long_data_tib(), input$select_condition, boxplot = input$add_boxplot)
     })
         

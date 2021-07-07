@@ -7,6 +7,7 @@
 #' @noRd 
 #'
 #' @importFrom shiny NS tagList 
+# UI ----
 mod_scatterplot_ui <- function(id){
   
   ns <- NS(id)
@@ -79,12 +80,13 @@ mod_scatterplot_ui <- function(id){
 #' 
 #'
 #' @noRd 
+#' 
+# server ----
 mod_scatterplot_server <- function(id, data_to_plot, metadata, sample_name_col, sets_of_interest, chosen_dataset, prefix = "", session) {
   
   moduleServer(id, function(input, output, session) {
-    
-    # Made this a reactive so that it's not called on initialisation
-    #tibble_dataset <- reactive(get_tibble_dataset(dataset, sample_name_col))
+
+    ## condition and axis dropdowns ----
     
     observeEvent(chosen_dataset(), {
       
@@ -99,7 +101,6 @@ mod_scatterplot_server <- function(id, data_to_plot, metadata, sample_name_col, 
     }) %>% bindCache(chosen_dataset(), input$select_condition)
 
     observeEvent(x_y_choices(), {
-      #req(x_y_choices())
       req(length(x_y_choices()) >= 2)
       updateSelectInput(
         inputId = "x_axis",
@@ -113,12 +114,52 @@ mod_scatterplot_server <- function(id, data_to_plot, metadata, sample_name_col, 
         selected = x_y_choices()[2]
       )
     })
+
+  ## plotting data reactives ----
+    
+    selected_data <- reactive({
+      req(data_to_plot())
+      select_by_group(
+        tibble_dataset = data_to_plot(),
+        condition = input$select_condition,
+        sample_name_col = sample_name_col,
+        x_var = input$x_axis,
+        y_var = input$y_axis
+      )
+    })
+    
+    scatter_plot_object <- reactive({
+      req(selected_data())
+      scatter(selected_data(), points_to_highlight(), input$x_axis, input$y_axis, label_highlighted())
+    })
+
+  ## output$plot ----
+    output$plot <- renderPlot({
+      req(scatter_plot_object())
+      scatter_plot_object()
+    }) %>% bindCache(
+      input$select_condition, 
+      input$x_axis, 
+      input$y_axis, 
+      input$set_to_highlight,
+      input$highlight_genes, 
+      chosen_dataset(),
+      label_highlighted()
+    )
+
+    ## highlight sets ----    
     
     label_highlighted <- reactiveVal(FALSE)
     
     shinyjs::disable("label_highlights")
     
-    rv <- reactiveValues()
+    points_to_highlight <- reactive({
+      req(selected_data())
+      if(input$highlight_genes & isTruthy(input$set_to_highlight)) {
+        genes <- get_set_to_highlight(sets_of_interest(), input$set_to_highlight)
+        return(dplyr::filter(selected_data(), row_attribute %in% genes))
+      } else NULL
+    })
     
     observeEvent(sets_of_interest(), {
       updateSelectInput(
@@ -138,45 +179,8 @@ mod_scatterplot_server <- function(id, data_to_plot, metadata, sample_name_col, 
     })
     
     observeEvent(input$label_highlights, label_highlighted(input$label_highlights))
-
-    selected_data <- reactive({
-      req(data_to_plot())#, rv$condition, rv$xvar, rv$yvar)
-      select_by_group(
-        tibble_dataset = data_to_plot(),
-        condition = input$select_condition,
-        sample_name_col = sample_name_col,
-        x_var = input$x_axis,
-        y_var = input$y_axis
-      )
-    })
-
-    points_to_highlight <- reactive({
-      req(selected_data())
-      if(input$highlight_genes & isTruthy(input$set_to_highlight)) {
-        genes <- get_set_to_highlight(sets_of_interest(), input$set_to_highlight)
-        return(dplyr::filter(selected_data(), row_attribute %in% genes))
-      } else NULL
-    })
     
-    scatter_plot_object <- reactive({
-      req(selected_data())
-      scatter(selected_data(), points_to_highlight(), input$x_axis, input$y_axis, label_highlighted())
-    })
-    
-    output$plot <- renderPlot({
-      req(scatter_plot_object())
-      scatter_plot_object()
-    }) %>% bindCache(
-      input$select_condition, 
-      input$x_axis, 
-      input$y_axis, 
-      input$set_to_highlight,
-      input$highlight_genes, 
-      chosen_dataset(),
-      label_highlighted()
-    )
-
-
+## download functions ----
     output$download_png <- downloadHandler(
       filename = function() {
         paste0("scatter.png")
@@ -195,23 +199,11 @@ mod_scatterplot_server <- function(id, data_to_plot, metadata, sample_name_col, 
       }
     )
     
-    # There was an issue with the updating of the drop downs - there were some times 
-    # when the variable type didn't match the x and y vars, because it hadn't had time to.
-    # This seems to fix it.
-    # observe({
-    #   #if(input$x_axis %in% metadata[[input$select_condition]] &
-    #   #  input$y_axis %in% metadata[[input$select_condition]]){
-    #   if(input$x_axis %in% data_to_plot[[input$select_condition]] &
-    #      input$y_axis %in% data_to_plot[[input$select_condition]]){
-    #       rv$xvar <- input$x_axis
-    #       rv$yvar <- input$y_axis
-    #       rv$condition <- input$select_condition
-    #   }
-    # })
-    
     observeEvent(input$browser, browser())
   })
 }
+
+# other functions ----
 
 #' scatter plot function
 #'
@@ -235,12 +227,15 @@ scatter <- function(dataset, points_to_highlight, x_var, y_var, label_subset) {
     ggplot2::theme(legend.position = "none") 
   
   if(!is.null(points_to_highlight)) {
-    p <- p + ggplot2::geom_point(data = points_to_highlight, ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]]), colour = "red")
+    p <- p + ggplot2::geom_point(
+      data = points_to_highlight, 
+      ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]]), 
+      colour = "red"
+      )
   }
   
   if(label_subset){
     p <- p + ggplot2::geom_text(
-      #data = subset(dataset, custom_colour == "red"),
       data = points_to_highlight,
       ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]], label = row_attribute),
       nudge_x = 1
@@ -248,12 +243,6 @@ scatter <- function(dataset, points_to_highlight, x_var, y_var, label_subset) {
   }
   p
 }
-
-#scatter(selected_data(), input$x_axis, input$y_axis, label_highlighted())
-# dataset <- selected_data()
-# x_var <- input$x_axis
-# y_var <- input$y_axis
-# label_subset <- label_highlighted()
 
 #' get_choices
 #' 
@@ -324,7 +313,6 @@ get_set_to_highlight <- function(sets, selected_set){
 #'
 #' @examples
 #' 
-
 select_by_group <- function(tibble_dataset, condition, sample_name_col, x_var, y_var){
 
   selected_data <- dplyr::filter(tibble_dataset, .data[[condition]] %in% c(x_var, y_var))
