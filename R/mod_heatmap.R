@@ -26,7 +26,7 @@ mod_heatmap_ui <- function(id){
             choices = ""
           )
         ),
-        column(3, offset = 2,numericInput(ns("plot_height"), "plot height", 500))
+        column(3, offset = 2, numericInput(ns("plot_height"), "plot height", 500))
       ),
       shinycssloaders::withSpinner(
         plotOutput(ns("plot"), width = "100%", height = "500"), 
@@ -75,6 +75,12 @@ mod_heatmap_server <- function(id, dataset, metadata, of_interest,
         )
       })
       
+      heatmap_height <- reactiveVal(500)
+      
+      observeEvent(input$plot_height, {
+        validate(need(input$plot_height > 200, "plot height must be > 200"))
+        heatmap_height(input$plot_height)
+      })
       
       ## data reactive expressions ----
       # we could have tickboxes to select which samples are shown
@@ -108,11 +114,8 @@ mod_heatmap_server <- function(id, dataset, metadata, of_interest,
       ## renderPlot ----
       output$plot <- renderPlot({
 
-        req(input$plot_height)
-        req(!is.na(input$plot_height))
-
         plot(heatmap_obj()$gtable)
-      }, height = function(x) input$plot_height)
+      }, height = function(x) heatmap_height())
 
       ## download functions ----
       output$download_png <- downloadHandler(
@@ -120,6 +123,7 @@ mod_heatmap_server <- function(id, dataset, metadata, of_interest,
           paste0("heatmap.png")
         },
         content = function(file) {
+          req(heatmap_height())
           ggplot2::ggsave(
             file,
             heatmap_obj()$gtable,
@@ -127,7 +131,7 @@ mod_heatmap_server <- function(id, dataset, metadata, of_interest,
             width = input$shiny_width/4, ## 1pixel ~ 0.26mm at 96 dpi. it's ~0.35 at 72dpi
             #height = input$shiny_height/4,
             #width = input$plot_width*0.35,
-            height = input$plot_height*0.35,
+            height = heatmap_height()*0.35,
             units = "mm"
           )
         }
@@ -144,7 +148,7 @@ mod_heatmap_server <- function(id, dataset, metadata, of_interest,
             device = "pdf",
             width = input$shiny_width/4,
             #width = input$plot_width*0.35,
-            height = input$plot_height*0.35,
+            height = heatmap_height()*0.35,
             units = "mm"
           )
         }
