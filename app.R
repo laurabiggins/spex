@@ -305,6 +305,7 @@ server <- function(input, output, session ) {
   })  
   
   output$set_info2 <- renderTable({
+    req(rv$measures_of_interest)
     tibble::enframe(sapply(rv$measures_of_interest, nrow))
   }, colnames = FALSE)
 
@@ -347,6 +348,7 @@ server <- function(input, output, session ) {
     metadata = reactive(rv$metadata),
     sample_name_col = sample_names,
     sets_of_interest = reactive(rv$measures_of_interest),
+    #sets_of_interest = rv$measures_of_interest,
     chosen_dataset = chosen_dataset
   )
 
@@ -366,6 +368,7 @@ server <- function(input, output, session ) {
     "name_filter", 
     reactive(rv$measure_names), 
     of_interest = reactive(rv$measures_of_interest),
+    #of_interest = rv$measures_of_interest,
     chosen_dataset = chosen_dataset
   )
 

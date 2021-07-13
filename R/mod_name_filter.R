@@ -128,7 +128,9 @@ mod_name_filter_server <- function(id, of_interest, measure_names, chosen_datase
       )
     })
       
-    sets_of_interest <- of_interest
+    sets_of_interest <- reactiveVal()
+    
+    observeEvent(of_interest(), sets_of_interest(of_interest()))
     
     rv <- reactiveValues()
     
@@ -260,7 +262,9 @@ mod_name_filter_server <- function(id, of_interest, measure_names, chosen_datase
       removeModal()
     })
     
-    reactive(sets_of_interest())
+    #reactive(sets_of_interest())
+    sets_of_interest
+
   })
 }
     
@@ -326,5 +330,8 @@ add_set <- function(sets, new_set_name = "another_set", new_set){
   sets[[new_set_name]] = tibble::tibble(!!new_set_name:=new_set)
   sets
 }    
+
+#new_sets <- add_set(sets_of_interest(), this_set_name,  matched_names())
+
 
    
