@@ -25,6 +25,29 @@ an example plot are shown below.
 
 ![](man/figures/README-density_screenshot.png)
 
+## Preparing data
+
+### Main data file
+
+A data file where each row contains a different genes (or other
+markers), and each column contains a different sample e.g.
+
+### Metadata file
+
+sample names in the first column that must match the column names in the
+main dataset, then conditions in subsequent columns e.g.
+
+| sample\_name | class | time\_series |
+|--------------|-------|--------------|
+| DAO06        | DA    | 1440         |
+| DAO09        | DA    | 1440         |
+| OEA098       | OEA   | 240          |
+| OEA068       | OEA   | 960          |
+| OEA101       | OEA   | 960          |
+
+Keep the name of the first column as “sample\_name” - it’s simpler for
+processing.
+
 ## Installation
 
 This is currently under initial development and has not been released.
