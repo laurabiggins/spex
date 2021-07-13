@@ -141,7 +141,10 @@ ui <- tagList(
       tabPanel(
         "data",
         br(),
-        wellPanel(DT::dataTableOutput("data_table"))
+        wellPanel(
+          DT::dataTableOutput("data_table"),
+          downloadButton("download_csv", "download csv")
+        )
       ),
 ## plot panel ----
       tabPanel(
@@ -321,6 +324,15 @@ server <- function(input, output, session ) {
     req(rv$dataset)
     dt_setup(rv$dataset, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
   })
+  
+  output$download_csv <- downloadHandler(
+    filename = function() {
+      paste(chosen_dataset(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(x = rv$dataset, file)
+    }
+  )
 
 ## plot tab ---- 
 ### histogram module ----    
@@ -348,7 +360,6 @@ server <- function(input, output, session ) {
     metadata = reactive(rv$metadata),
     sample_name_col = sample_names,
     sets_of_interest = reactive(rv$measures_of_interest),
-    #sets_of_interest = rv$measures_of_interest,
     chosen_dataset = chosen_dataset
   )
 
@@ -368,7 +379,6 @@ server <- function(input, output, session ) {
     "name_filter", 
     reactive(rv$measure_names), 
     of_interest = reactive(rv$measures_of_interest),
-    #of_interest = rv$measures_of_interest,
     chosen_dataset = chosen_dataset
   )
 
