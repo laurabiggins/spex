@@ -133,16 +133,45 @@ mod_scatterplot_server <- function(id, data_to_plot, metadata, sample_name_col, 
       scatter(selected_data(), points_to_highlight(), input$x_axis, input$y_axis, label_highlighted())
     })
 
-  ## output$plot ----
+    # Attempt to see whether the scatter plot could not be re-rendered each time the highlight option
+    # was selected but I don't think there's a way to do it.
+    # plotly proxy function is now available but I don't know whether that allows enought control to highlight specific points
+    # scatter_base_obj <- reactive({
+    #   req(selected_data())
+    #   scatter_black(selected_data(), input$x_axis, input$y_axis)
+    # })
+    # 
+    # scatter_highlight_obj <- reactive({
+    #   req(points_to_highlight())
+    #   scatter_highlight(selected_data(), points_to_highlight(), input$x_axis, input$y_axis) 
+    # })
+    # 
+    # scatter_labelled <- reactive({
+    #   scatter_highlight_obj() + ggplot2::geom_text(
+    #     data = points_to_highlight(),
+    #     ggplot2::aes(x = .data[[input$x_axis]], y = .data[[input$y_axis]], label = row_attribute),
+    #     nudge_x = 1
+    #   )
+    # })
+    # 
+    # output$plot <- renderPlot({
+    #   req(scatter_base_obj())
+    #   if(label_highlighted()) scatter_labelled()
+    #   else if(input$highlight_genes & isTruthy(input$set_to_highlight)) scatter_highlight_obj()
+    #   else scatter_base_obj()
+    # })  
+         
+    
+    # output$plot ----
     output$plot <- renderPlot({
       req(scatter_plot_object())
       scatter_plot_object()
     }) %>% bindCache(
-      input$select_condition, 
-      input$x_axis, 
-      input$y_axis, 
+      input$select_condition,
+      input$x_axis,
+      input$y_axis,
       input$set_to_highlight,
-      input$highlight_genes, 
+      input$highlight_genes,
       chosen_dataset(),
       label_highlighted()
     )
@@ -243,6 +272,34 @@ scatter <- function(dataset, points_to_highlight, x_var, y_var, label_subset) {
   }
   p
 }
+
+# scatter_black <- function(dataset, x_var, y_var) {
+#   
+#   req(x_var %in% colnames(dataset))
+#   req(y_var %in% colnames(dataset))
+#   
+#   ggplot2::ggplot(dataset, ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]])) +
+#     ggplot2::geom_abline(slope = 1, colour = "#3cc1f2") +
+#     ggplot2::geom_point(colour = "black") +
+#     ggplot2::theme(legend.position = "none") 
+# }
+# 
+# scatter_highlight <- function(dataset, points_to_highlight, x_var, y_var) {
+#   
+#   req(x_var %in% colnames(dataset))
+#   req(y_var %in% colnames(dataset))
+#   
+#   p <- ggplot2::ggplot(dataset, ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]])) +
+#     ggplot2::geom_abline(slope = 1, colour = "#3cc1f2") +
+#     ggplot2::geom_point(colour = "grey") +
+#     ggplot2::theme(legend.position = "none")
+#   
+#   p + ggplot2::geom_point(
+#     data = points_to_highlight, 
+#     ggplot2::aes(x = .data[[x_var]], y = .data[[y_var]]), 
+#     colour = "red"
+#   )
+# }
 
 #' get_choices
 #' 
