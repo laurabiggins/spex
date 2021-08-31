@@ -21,6 +21,18 @@ ui <- tagList(
   fluidPage(
     shinyFeedback::useShinyFeedback(),
     shinyjs::useShinyjs(),
+    tags$head(
+      tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
+      #tags$script(src = "script.js"),
+      tags$script(
+#         "var exploreText = document.getElementById('explore');
+#         exploreText.style.backgroundColor = 'red';"
+       #  "var chosenDataset = document.location.hash;
+       "$(document).on('shiny:connected', function() {
+         Shiny.setInputValue('pre_chosen_dataset', document.location.hash, {priority: 'event'});
+       })"
+      )
+    ),
     theme = bslib::bs_theme(
       bg = bab_dark_blue,
       fg = "white",
@@ -50,19 +62,24 @@ ui <- tagList(
             selectInput(
               inputId = "choose_dataset",
               label = NULL,
-              choices = c("choose dataset", available_datasets),
+              choices = c("choose dataset", available_datasets)
             ),
             actionButton(inputId = "load_data", label = "load dataset"),
             br(),
             br(),
-            p("Explore your chosen dataset by using the tabs above."),
-            p("Sample names and experimental conditions are shown in the metadata section."),
-            p("The data tab shows the whole dataset, which can be downloaded if required."),
-            p("A range of plots can be viewed and downloaded to explore different aspects of the dataset.")
+            p(id="explore", "Explore your chosen dataset by using the tabs above."),
+            p(id="explore2", "Sample names and experimental conditions are shown in the metadata section."),
+            p(id="explore3","The data tab shows the whole dataset, which can be downloaded if required."),
+            p(id="explore4","A range of plots can be viewed and downloaded to explore different aspects of the dataset.")
           ),
           mainPanel(
             br(),
-            h1(textOutput(outputId = "dataset_name"), align = "center"),
+            shinycssloaders::withSpinner(
+              h1(textOutput(outputId = "dataset_name"), align = "center"),
+              image = "images/bioinf1.gif", 
+              image.width = 100
+            ),
+            #h1(textOutput(outputId = "dataset_name"), align = "center"),
             br(),
             h5(textOutput(outputId = "dataset_info")),
             br(),br(),br(),
@@ -84,9 +101,9 @@ ui <- tagList(
               h3("Dataset summary", align = "center", style="margin: 10px;"),
               textOutput("meta_info1"),
               textOutput("meta_info2"),
-              h6("Number of categories in each variable:"),
+              h6("Number of categories in each condition:"),
               tableOutput("meta_info3"),
-              checkboxInput("show_meta_summary", "show more information on variables"),
+              checkboxInput("show_meta_summary", "show more information on conditions"),
               conditionalPanel(
                 condition = "input.show_meta_summary == 1",
                 fluidRow(
@@ -184,7 +201,12 @@ ui <- tagList(
       )  
     ),
     br()
-  )
+  ),
+  # tags$script(
+  #   "var exploreText = document.getElementById('explore');
+  #         exploreText.style.backgroundColor = 'red';"
+  # ),
+  tags$script(src = "script.js")
 )
 
 # server ----
@@ -193,8 +215,10 @@ server <- function(input, output, session ) {
 ## reactive values ----  
   data_loaded <- reactiveVal(FALSE)
   
-  chosen_dataset <- eventReactive(input$load_data, input$choose_dataset)
+  #chosen_dataset <- eventReactive(input$load_data, input$choose_dataset)
 
+  chosen_dataset <- reactiveVal("choose dataset")
+  
   rv <- reactiveValues(
     dataset = NULL, # the currently loaded dataset
     long_data_tib = NULL, # tidied long version of dataset
@@ -203,42 +227,70 @@ server <- function(input, output, session ) {
     metadata = NULL # list of accompanying metadata
   )
 
-  ## load data ----     
   observeEvent(input$load_data, {
-    
-    if(input$choose_dataset != "choose dataset") {
-    
-      # need checks here that the locations exist
-      data_folder <- paste0(data_location, input$choose_dataset, "/")
+    chosen_dataset(input$choose_dataset)
+  })
       
-      dataset  <- readRDS(paste0(data_folder, "dataset.rds"))
-      metadata_processed  <- readRDS(paste0(data_folder, "metadata.rds"))
-      of_interest  <- readRDS(paste0(data_folder, "of_interest.rds"))
-      
-      rv$dataset <- dataset
-      rv$metadata <- metadata_processed
-      rv$measure_names <- rownames(dataset)
-      rv$measures_of_interest <- of_interest
-      
-      meta_factors <- metadata_processed$meta_all %>%
-        dplyr::mutate_if(is.character, factor) %>%
-        dplyr::mutate_if(is.double, factor) %>%
-        dplyr::mutate_if(is.integer, factor)
-      
-      tib <- tibble::as_tibble(dataset, rownames = "row_attribute")
-      long_data_tibble <- tib %>% 
-        tidyr::pivot_longer(cols = -row_attribute, names_to = sample_names) %>%
-        tidyr::drop_na() %>%
-        dplyr::left_join(meta_factors)
-      
-      rv$long_data_tib <- long_data_tibble
-      
+  observeEvent(input$pre_chosen_dataset, {
+    req(input$pre_chosen_dataset)
+    print("from pre_chosen_dataset")
+    cleaned_choice <- substring(input$pre_chosen_dataset, 2) # remove hash
+    if(cleaned_choice %in%  available_datasets){
+      chosen_dataset(cleaned_choice) 
       updateSelectInput(
-        inputId = "selected_condition",
-        label = "select condition",
-        choices = names(rv$metadata$meta_summary)
+        inputId = "choose_dataset",
+        choices = c("choose dataset", available_datasets),
+        selected = cleaned_choice
       )
     }
+  })
+  
+  ## load data ----     
+  #observeEvent(input$load_data, {
+   observeEvent(chosen_dataset(), { 
+      
+      if(chosen_dataset() != "choose dataset") {
+        
+        # need checks here that the locations exist
+        data_folder <- paste0(data_location, chosen_dataset(), "/")
+        
+        if(file.exists(paste0(data_folder, "dataset.feather"))){
+          dataset <- feather::read_feather(paste0(data_folder, "dataset.feather"))
+        } else {
+          dataset  <- readRDS(paste0(data_folder, "dataset.rds"))
+        }
+                                          
+        metadata_processed  <- readRDS(paste0(data_folder, "metadata.rds"))
+        
+        if(file.exists(paste0(data_folder, "of_interest.rds"))){
+          of_interest  <- readRDS(paste0(data_folder, "of_interest.rds"))
+        } else of_interest <- NULL
+        
+        rv$dataset <- dataset
+        rv$metadata <- metadata_processed
+        rv$measure_names <- rownames(dataset)
+        rv$measures_of_interest <- of_interest
+        
+        meta_factors <- metadata_processed$meta_all %>%
+          dplyr::mutate_if(is.character, factor) %>%
+          dplyr::mutate_if(is.double, factor) %>%
+          dplyr::mutate_if(is.integer, factor)
+        
+        tib <- tibble::as_tibble(dataset, rownames = "row_attribute")
+        
+        long_data_tibble <- tib %>% 
+          tidyr::pivot_longer(cols = -row_attribute, names_to = sample_names) %>%
+          tidyr::drop_na() %>%
+          dplyr::left_join(meta_factors)
+        
+        rv$long_data_tib <- long_data_tibble
+        
+        updateSelectInput(
+          inputId = "selected_condition",
+          label = "select condition",
+          choices = names(rv$metadata$meta_summary)
+        )
+     }
   })
 
 ## info tab ----    
@@ -261,10 +313,13 @@ server <- function(input, output, session ) {
 #### info that's always present if data is loaded ----   
   output$meta_info1 <- renderText({
     req(rv$metadata)
+    req(rv$dataset)
     paste0(
       "The dataset contains ", 
       nrow(rv$metadata$meta_summary[[sample_names]]), 
-      " samples."
+      " samples and ",
+      nrow(rv$dataset),
+      " measures."
     )
   })
   
@@ -272,7 +327,7 @@ server <- function(input, output, session ) {
     req(rv$metadata)
     met <- rv$metadata
     paste0(
-      "Variables are: ", 
+      "Conditions are: ", 
       paste0(
         names(met$meta_summary)[!names(met$meta_summary) %in% met$sample_name], 
         collapse = ", "
