@@ -17,16 +17,20 @@ mod_heatmap_ui <- function(id){
     wellPanel(
       id = ns("panel"),
       fluidRow(
-        column(2, downloadButton(ns("download_png"), "png")),
-        column(2, downloadButton(ns("download_pdf"), "pdf")),
-        column(3, 
+        column(1, downloadButton(ns("download_png"), "png")),
+        column(1, downloadButton(ns("download_pdf"), "pdf")),
+        column(3, offset = 2, id = "selection_dropdown",
           selectInput(
             inputId = ns("selected_set"),
             label = "select set",
             choices = ""
           )
         ),
-        column(3, offset = 2, numericInput(ns("plot_height"), "plot height", 500))
+        column(2, 
+               checkboxInput(ns("cluster_rows"), label = "cluster rows", value = TRUE),
+               checkboxInput(ns("cluster_cols"), label = "cluster columns", value = TRUE)
+               ),
+        column(3, numericInput(ns("plot_height"), "plot height", 500))
       ),
       shinycssloaders::withSpinner(
         plotOutput(ns("plot"), width = "100%", height = "500"), 
@@ -67,7 +71,7 @@ mod_heatmap_server <- function(id, dataset, metadata, of_interest,
       
       ## update select input ----
       observeEvent(of_interest(), {
-        opts <- c("all", names(of_interest()))
+        opts <- c("random_selection", names(of_interest()))
         updateSelectInput(
           inputId = "selected_set", 
           choices = opts,
@@ -88,8 +92,9 @@ mod_heatmap_server <- function(id, dataset, metadata, of_interest,
         
         validate(need(dataset(), "Please load a dataset"))
         
-        if(input$selected_set == "all") {
-          return (dataset())
+        if(input$selected_set == "random_selection") {
+          return(dplyr::sample_n(as.data.frame(dataset()), size = 300))
+          #return (dataset())
         } else {
           req(of_interest(), dataset())
           genes_of_interest <- of_interest()[[input$selected_set]][[1]]
@@ -104,8 +109,21 @@ mod_heatmap_server <- function(id, dataset, metadata, of_interest,
             "Dataset contains NA or missing values so heatmap cannot be plotted."
           )
         )
+        validate(
+          need(
+            !any(selected_data() == "-Inf"),
+            "Dataset contains -Inf values so heatmap cannot be plotted."
+          )
+        )
+        # remove any rows with variance of 0
+        variances <- apply(selected_data(), 1, var)
+        heatmap_data <- selected_data()[variances > 0, ] 
+        
+        # 
         pheatmap::pheatmap(
-          selected_data(),
+          heatmap_data,
+          cluster_rows = input$cluster_rows,
+          cluster_cols = input$cluster_cols,
           scale = "row",
           silent = TRUE
         )
