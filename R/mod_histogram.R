@@ -31,10 +31,9 @@ mod_histogramUI <- function(id){
             choices = ""
           ),
           br(),
-          textInput(ns("text"), label = NULL, value = "my piece of text"),
           downloadButton(ns("download_png"), "png"),
           downloadButton(ns("download_pdf"), "pdf"),
-          actionButton(ns("browser"), "browser")
+         # actionButton(ns("browser"), "browser")
         ),
         mainPanel(
           width = 8,
@@ -77,11 +76,6 @@ mod_histogramServer <- function(id, data_to_plot, chosen_dataset, meta, prefix =
       updateSelectInput(
         inputId = "select_variable",
         choices = new_choices
-      )
-      
-      updateTextInput(
-        inputId = "text", 
-        value = paste0("dataset = ", chosen_dataset())
       )
     })
     
