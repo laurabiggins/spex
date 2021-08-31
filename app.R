@@ -1,7 +1,3 @@
-# Launch the ShinyApp (Do not remove this comment)
-# To deploy, run: rsconnect::deployApp()
-# Or use the blue button on top of this file
-
 library(shiny)
 library(magrittr)
 
@@ -13,6 +9,20 @@ sample_names <- "sample_name"
 bab_light_blue <- "#00aeef"
 bab_dark_blue <- "#1d305f"
 
+appCSS <- "
+#loading-content {
+  position: absolute;
+  background: #000000;
+  opacity: 0.9;
+  z-index: 100;
+  left: 0;
+  right: 0;
+  height: 100%;
+  text-align: center;
+  color: #FFFFFF;
+}
+"
+
 # UI ----
 ui <- tagList(
   
@@ -21,13 +31,13 @@ ui <- tagList(
   fluidPage(
     shinyFeedback::useShinyFeedback(),
     shinyjs::useShinyjs(),
+    shinyjs::inlineCSS(appCSS),
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
       #tags$script(src = "script.js"),
       tags$script(
 #         "var exploreText = document.getElementById('explore');
 #         exploreText.style.backgroundColor = 'red';"
-       #  "var chosenDataset = document.location.hash;
        "$(document).on('shiny:connected', function() {
          Shiny.setInputValue('pre_chosen_dataset', document.location.hash, {priority: 'event'});
        })"
@@ -40,174 +50,179 @@ ui <- tagList(
       secondary = bab_light_blue
     ),
     titlePanel(
-      tags$img(
-        src = "images/BI_logo_grey.png", 
-        style="margin-top: -10px; padding-right:10px; padding-bottom:10px", 
-        width = "80", 
-        height = "85",
-        align = "right"
+        tags$img(
+          src = "images/BI_logo_grey.png", 
+          style="margin-top: -10px; padding-right:10px; padding-bottom:10px", 
+          width = "80", 
+          height = "85",
+          align = "right"
+        ),
+        windowTitle="spex"
       ),
-      windowTitle="spex"
-    ),
-    br(),
-    tabsetPanel(
-      id = "main_panels",
-## info panel ----
-      tabPanel(
-        "info",
-        br(),
-        sidebarLayout(
-          sidebarPanel(
-            width = 3,
-            selectInput(
-              inputId = "choose_dataset",
-              label = NULL,
-              choices = c("choose dataset", available_datasets)
-            ),
-            actionButton(inputId = "load_data", label = "load dataset"),
-            br(),
-            br(),
-            p(id="explore", "Explore your chosen dataset by using the tabs above."),
-            p(id="explore2", "Sample names and experimental conditions are shown in the metadata section."),
-            p(id="explore3","The data tab shows the whole dataset, which can be downloaded if required."),
-            p(id="explore4","A range of plots can be viewed and downloaded to explore different aspects of the dataset.")
+      br(),
+      tabsetPanel(
+        id = "main_panels",
+  ## info panel ----
+        tabPanel(
+          "info",
+          br(),
+          div(
+            id = "loading-content",
+            h2("Loading...")
           ),
-          mainPanel(
-            br(),
-            shinycssloaders::withSpinner(
+          shinyjs::hidden(
+            div(
+              id = "app-content",
+          sidebarLayout(
+            sidebarPanel(
+              width = 3,
+              selectInput(
+                inputId = "choose_dataset",
+                label = NULL,
+                choices = c("choose dataset", available_datasets)
+              ),
+              actionButton(inputId = "load_data", label = "load dataset"),
+              br(),
+              br(),
+              p(id="explore", "Explore your chosen dataset by using the tabs above."),
+              p(id="explore2", "Sample names and experimental conditions are shown in the metadata section."),
+              p(id="explore3","The data tab shows the whole dataset, which can be downloaded if required."),
+              p(id="explore4","A range of plots can be viewed and downloaded to explore different aspects of the dataset.")
+            ),
+            mainPanel(
+              br(),
               h1(textOutput(outputId = "dataset_name"), align = "center"),
-              image = "images/bioinf1.gif", 
-              image.width = 100
-            ),
-            #h1(textOutput(outputId = "dataset_name"), align = "center"),
-            br(),
-            h5(textOutput(outputId = "dataset_info")),
-            br(),br(),br(),
-            br(),br(),br(),br(),br(),br(),br(),
-            h6("For more information about work carried out at the Babraham Institute
-                 visit the", a(href= "https://www.babraham.ac.uk/", "website")),
-            br(),br(),br(),br()
-          )
-        )  
-      ),
-## metadata panel ----
-      tabPanel(
-        "metadata",
-        br(),
-        fluidRow(
-          column(
-            width = 6,
-            wellPanel(align = "center",
-              h3("Dataset summary", align = "center", style="margin: 10px;"),
-              textOutput("meta_info1"),
-              textOutput("meta_info2"),
-              h6("Number of categories in each condition:"),
-              tableOutput("meta_info3"),
-              checkboxInput("show_meta_summary", "show more information on conditions"),
-              conditionalPanel(
-                condition = "input.show_meta_summary == 1",
-                fluidRow(
-                  column(
-                    width = 6,
-                    selectInput(
-                      "selected_condition",
-                      "select condition",
-                      choices = ""
-                    ),
-                  ),
-                  column(width = 6, tableOutput("meta_summary"))
-                )
-              ),
-              checkboxInput("show_meta", "show all metadata"),
-              conditionalPanel(
-                condition = "input.show_meta == 1",
-                DT::dataTableOutput("meta_table")
-              ),
-              actionButton("browser", "browser")
+              br(),
+              h5(textOutput(outputId = "dataset_info")),
+              br(),br(),br(),
+              br(),br(),br(),br(),br(),br(),br(),
+              h6("For more information about work carried out at the Babraham Institute
+                   visit the", a(href= "https://www.babraham.ac.uk/", "website")),
+              br(),br(),br(),br()
             )
-          ),
-          column(
-            width = 6,
-            wellPanel(align = "center",
-              h3("Sets of interest", align = "center", style="margin: 10px;"),
-              textOutput("set_info1"),
-              h6("Number in each set:"),
-              tableOutput("set_info2"),
-              checkboxInput("show_sets", "show items in set"),
-              conditionalPanel(
-                condition = "input.show_sets == 1",
-                fluidRow(
-                  column(
-                    width = 6,
-                    selectInput(
-                      "selected_set",
-                      "select set",
-                      choices = ""
-                    )
-                  ),
-                  column(width = 6, tableOutput("set_summary"))
+          ) 
+        )
+        )
+        ),
+  ## metadata panel ----
+        tabPanel(
+          "metadata",
+          br(),
+          fluidRow(
+            column(
+              width = 6,
+              wellPanel(align = "center",
+                h3("Dataset summary", align = "center", style="margin: 10px;"),
+                textOutput("meta_info1"),
+                textOutput("meta_info2"),
+                h6("Number of categories in each condition:"),
+                tableOutput("meta_info3"),
+                checkboxInput("show_meta_summary", "show more information on conditions"),
+                conditionalPanel(
+                  condition = "input.show_meta_summary == 1",
+                  fluidRow(
+                    column(
+                      width = 6,
+                      selectInput(
+                        "selected_condition",
+                        "select condition",
+                        choices = ""
+                      ),
+                    ),
+                    column(width = 6, tableOutput("meta_summary"))
+                  )
+                ),
+                checkboxInput("show_meta", "show all metadata"),
+                conditionalPanel(
+                  condition = "input.show_meta == 1",
+                  DT::dataTableOutput("meta_table")
+                ),
+                actionButton("browser", "browser")
+              )
+            ),
+            column(
+              width = 6,
+              wellPanel(align = "center",
+                h3("Sets of interest", align = "center", style="margin: 10px;"),
+                textOutput("set_info1"),
+                h6("Number in each set:"),
+                tableOutput("set_info2"),
+                checkboxInput("show_sets", "show items in set"),
+                conditionalPanel(
+                  condition = "input.show_sets == 1",
+                  fluidRow(
+                    column(
+                      width = 6,
+                      selectInput(
+                        "selected_set",
+                        "select set",
+                        choices = ""
+                      )
+                    ),
+                    column(width = 6, tableOutput("set_summary"))
+                  )
                 )
               )
-            )
-          )  
+            )  
+          ),
+          br(),
+          br()
         ),
-        br(),
-        br()
-      ),
-## data panel ----
-      tabPanel(
-        "data",
-        br(),
-        wellPanel(
-          DT::dataTableOutput("data_table"),
-          downloadButton("download_csv", "download csv")
+  ## data panel ----
+        tabPanel(
+          "data",
+          br(),
+          wellPanel(
+            DT::dataTableOutput("data_table"),
+            downloadButton("download_csv", "download csv")
+          )
+        ),
+  ## plot panel ----
+        tabPanel(
+          "plot",
+          br(),
+          navlistPanel(
+            "plot type",
+            tabPanel("histogram", mod_histogramUI("hist")),
+            tabPanel("scatterplot", mod_scatterplot_ui("scatter")),
+            tabPanel("heatmap", mod_heatmap_ui("heatmap")),
+            tabPanel("violinplot", mod_violinplot_ui("violinplot")),
+            widths = c(3,9)
+          )
+        ),
+  ## filter panel ----
+        tabPanel(
+          "filter",
+          br(),
+          mod_name_filter_ui("name_filter")
         )
       ),
-## plot panel ----
-      tabPanel(
-        "plot",
-        br(),
-        navlistPanel(
-          "plot type",
-          tabPanel("histogram", mod_histogramUI("hist")),
-          tabPanel("scatterplot", mod_scatterplot_ui("scatter")),
-          tabPanel("heatmap", mod_heatmap_ui("heatmap")),
-          tabPanel("violinplot", mod_violinplot_ui("violinplot")),
-          widths = c(3,9)
-        )
+  ## footers ----
+      br(),
+      fluidRow(
+        column(
+          width = 3,
+          tags$img(src = "images/bioinformatics_logo_small_grey.png", 
+                   width = "200", height = "71")
+        ),
+        column(
+          width = 6,
+          offset = 3,
+          br(),
+          br(),
+          p("Any problems please email laura.biggins@babraham.ac.uk", 
+            style = "font-size:12px", align = "right")
+        )  
       ),
-## filter panel ----
-      tabPanel(
-        "filter",
-        br(),
-        mod_name_filter_ui("name_filter")
-      )
+      br()
     ),
-## footers ----
-    br(),
-    fluidRow(
-      column(
-        width = 3,
-        tags$img(src = "images/bioinformatics_logo_small_grey.png", 
-                 width = "200", height = "71")
-      ),
-      column(
-        width = 6,
-        offset = 3,
-        br(),
-        br(),
-        p("Any problems please email laura.biggins@babraham.ac.uk", 
-          style = "font-size:12px", align = "right")
-      )  
-    ),
-    br()
-  ),
-  # tags$script(
+    # tags$script(
   #   "var exploreText = document.getElementById('explore');
   #         exploreText.style.backgroundColor = 'red';"
   # ),
   tags$script(src = "script.js")
 )
+
 
 # server ----
 server <- function(input, output, session ) {
@@ -446,6 +461,10 @@ server <- function(input, output, session ) {
   })
   
   observeEvent(input$browser, browser())
+  
+  shinyjs::hide(id = "loading-content", anim = TRUE, animType = "fade")    
+  shinyjs::show("app-content")
+
 }
 
 
