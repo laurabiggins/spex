@@ -94,6 +94,17 @@ mod_scatterplot_server <- function(id, data_to_plot, metadata, sample_name_col, 
         inputId = "select_condition",
         choices = sort(names(metadata()$meta_summary))
       )
+      print("chosen dataset has changed")
+      
+      new_choices <- names(sets_of_interest())
+      if (is.null(new_choices)) new_choices <- character(0)
+      updateSelectInput(
+        inputId = "set_to_highlight", 
+        choices = new_choices
+      )
+      
+      updateCheckboxInput(inputId = "highlight_genes", value = FALSE)
+      updateCheckboxInput(inputId = "label_highlights", value = FALSE)
     })
     
     x_y_choices <- reactive({
@@ -376,7 +387,7 @@ select_by_group <- function(tibble_dataset, condition, sample_name_col, x_var, y
   n_samples <- dplyr::n_distinct(selected_data[[sample_name_col]])
   
   if(n_samples < 2) { # | length(unique(selected_data[[sample_name_col]])) < 2) {
-    print("only found 1 selected variable to plot on scatter")
+    print("only found 1 (or 0) selected variable to plot on scatter")
     print(
       paste0(
         "n_samples = ", 

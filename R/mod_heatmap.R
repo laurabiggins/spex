@@ -79,6 +79,16 @@ mod_heatmap_server <- function(id, dataset, metadata, of_interest,
         )
       })
       
+      observeEvent(dataset(), {
+        opts <- c("random_selection", names(of_interest()))
+        updateSelectInput(
+          inputId = "selected_set", 
+          choices = opts,
+          selected = dplyr::last(opts)
+        )
+      })
+      
+      
       heatmap_height <- reactiveVal(500)
       
       observeEvent(input$plot_height, {
@@ -93,7 +103,7 @@ mod_heatmap_server <- function(id, dataset, metadata, of_interest,
         validate(need(dataset(), "Please load a dataset"))
         
         if(input$selected_set == "random_selection") {
-          return(dplyr::sample_n(as.data.frame(dataset()), size = 300))
+          return(dplyr::sample_n(as.data.frame(dataset()), size = 200))
           #return (dataset())
         } else {
           req(of_interest(), dataset())
