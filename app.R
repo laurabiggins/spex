@@ -1,6 +1,8 @@
 library(shiny)
 library(magrittr)
 
+show_browser <- TRUE
+
 data_location <- "inst/extdata/"
 folders <- basename(list.dirs(data_location))
 available_datasets <- folders[folders != "extdata"]
@@ -122,14 +124,14 @@ ui <- tagList(
                   condition = "input.show_meta_summary == 1",
                   fluidRow(
                     column(
-                      width = 6,
+                      width = 4,
                       selectInput(
                         "selected_condition",
                         "select condition",
                         choices = ""
                       ),
                     ),
-                    column(width = 6, tableOutput("meta_summary"))
+                    column(width = 8, tableOutput("meta_summary"))
                   )
                 ),
                 checkboxInput("show_meta", "show all metadata"),
@@ -137,7 +139,7 @@ ui <- tagList(
                   condition = "input.show_meta == 1",
                   DT::dataTableOutput("meta_table")
                 ),
-                actionButton("browser", "browser")
+              if(show_browser) actionButton("browser", "browser")
               )
             ),
             column(
@@ -152,14 +154,14 @@ ui <- tagList(
                   condition = "input.show_sets == 1",
                   fluidRow(
                     column(
-                      width = 6,
+                      width = 4,
                       selectInput(
                         "selected_set",
                         "select set",
                         choices = ""
                       )
                     ),
-                    column(width = 6, tableOutput("set_summary"))
+                    column(width = 8, tableOutput("set_summary"))
                   )
                 )
               )
@@ -382,17 +384,28 @@ server <- function(input, output, session ) {
     tibble::enframe(sapply(rv$measures_of_interest, nrow))
   }, colnames = FALSE)
 
-#### table in conditional panel     
+#### table in conditional panel  ----   
   output$set_summary <- renderTable({
     req(input$selected_set)
     req(rv$measures_of_interest)
     rv$measures_of_interest[[input$selected_set]]
   })
   
-  # data tab ----
+  ## data tab ----
   output$data_table <- DT::renderDataTable({
     req(rv$dataset)
-    dt_setup(rv$dataset, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
+    #dt_setup(rv$dataset, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
+    
+    DT::datatable(
+      rv$dataset,
+      options = list(
+        dom = "ftlip", 
+        scrollX = TRUE, 
+        autoWidth = FALSE
+      )
+    ) %>% 
+      DT::formatStyle(0, target = 'row', `font-size` = '90%', lineHeight = '80%') %>%
+      DT::formatRound(columns = 1:ncol(rv$dataset), digits = 2)
   })
   
   output$download_csv <- downloadHandler(
