@@ -272,11 +272,11 @@ server <- function(input, output, session ) {
         # need checks here that the locations exist
         data_folder <- paste0(data_location, chosen_dataset(), "/")
         
-        if(file.exists(paste0(data_folder, "dataset.feather"))){
-          dataset <- feather::read_feather(paste0(data_folder, "dataset.feather"))
-        } else {
+        #if(file.exists(paste0(data_folder, "dataset.feather"))){
+        #  dataset <- feather::read_feather(paste0(data_folder, "dataset.feather"))
+       # } else {
           dataset  <- readRDS(paste0(data_folder, "dataset.rds"))
-        }
+       # }
                                           
         metadata_processed  <- readRDS(paste0(data_folder, "metadata.rds"))
         
