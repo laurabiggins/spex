@@ -3,7 +3,9 @@ library(magrittr)
 
 show_browser <- TRUE
 
-data_location <- "inst/extdata/"
+# for accessing data from spex upload location
+data_location <- "/data/private/shiny_scripts/spex_upload/inst/extdata/" 
+#data_location <- "inst/extdata/"
 folders <- basename(list.dirs(data_location))
 available_datasets <- folders[folders != "extdata"]
 
