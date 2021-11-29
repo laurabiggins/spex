@@ -36,6 +36,7 @@ ui <- tagList(
     shinyjs::inlineCSS(appCSS),
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
+      HTML('<link rel="icon" type="image/jpg" href = "images/spex_logo_rotated.png"/>'),
       #tags$script(src = "script.js"),
       tags$script(
 #         "var exploreText = document.getElementById('explore');
@@ -283,10 +284,16 @@ server <- function(input, output, session ) {
           of_interest  <- readRDS(paste0(data_folder, "of_interest.rds"))
         } else of_interest <- NULL
         
+        if(file.exists(paste0(data_folder, "info.rds"))){
+          info  <- readRDS(paste0(data_folder, "info.rds"))
+        } else info <- list(summary_info = "populate with info file")
+        
+        
         rv$dataset <- dataset
         rv$metadata <- metadata_processed
         rv$measure_names <- rownames(dataset)
         rv$measures_of_interest <- of_interest
+        rv$info <- info
         
         meta_factors <- metadata_processed$meta_all %>%
           dplyr::mutate_if(is.character, factor) %>%
@@ -320,7 +327,8 @@ server <- function(input, output, session ) {
     if(chosen_dataset() == "choose dataset") {
       "Choose a dataset from the dropdown on the left"
     } else {
-      "populate this with an info file"
+      #"populate this with an info file"
+      rv$info$summary_info
     }
     
   })
