@@ -46,12 +46,12 @@ ui <- tagList(
        })"
       )
     ),
-    theme = bslib::bs_theme(
-      bg = bab_dark_blue,
-      fg = "white",
-      primary = bab_light_blue,
-      secondary = bab_light_blue
-    ),
+    # theme = bslib::bs_theme(
+    #   bg = bab_dark_blue,
+    #   fg = "white",
+    #   primary = bab_light_blue,
+    #   secondary = bab_light_blue
+    # ),
     # titlePanel(
     #     tags$img(
     #       src = "images/BI_logo_grey.png", 
@@ -182,14 +182,29 @@ ui <- tagList(
   ## plot panel ----
         tabPanel(
           "plot",
-          br(),
-          navlistPanel(
-            "plot type",
-            tabPanel("histogram", mod_histogramUI("hist")),
-            tabPanel("scatterplot", mod_scatterplot_ui("scatter")),
-            tabPanel("heatmap", mod_heatmap_ui("heatmap")),
-            tabPanel("violinplot", mod_violinplot_ui("violinplot")),
-            widths = c(3,9)
+          dashboardPage(
+            dashboardHeader(disable = TRUE),
+            dashboardSidebar(disable = TRUE),
+            dashboardBody(
+              fluidRow(
+                  box(title = "histogram", 
+                      status = "primary", 
+                      solidHeader = TRUE, 
+                      collapsible = TRUE, 
+                      background = "blue", 
+                      mod_histogramUI("hist")
+                  ),
+                  box(title = "scatterplot", 
+                      status = "primary", 
+                      solidHeader = TRUE, 
+                      collapsible = TRUE, 
+                      #background = "blue",
+                      mod_scatterplot_ui("scatter")
+                  )
+              )
+              #tabPanel("heatmap", mod_heatmap_ui("heatmap")),
+              #tabPanel("violinplot", mod_violinplot_ui("violinplot"))
+            )
           )
         ),
   ## filter panel ----

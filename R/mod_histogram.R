@@ -19,30 +19,16 @@ mod_histogramUI <- function(id){
   
   tagList(
     wellPanel(
-      id = ns("panel"),
-      sidebarLayout(
-        position = "right",
-        sidebarPanel(
-          style = "padding: 10px",
-          width = 4,
-          selectInput(
-            inputId = ns("select_variable"),
-            label = "select variable",
-            choices = ""
-          ),
-          br(),
-          downloadButton(ns("download_png"), "png"),
-          downloadButton(ns("download_pdf"), "pdf"),
-         # actionButton(ns("browser"), "browser")
-        ),
-        mainPanel(
-          width = 8,
-          shinycssloaders::withSpinner(
-            plotOutput(ns("plot"), width = "100%", height = 500), 
-            image = "images/bioinf1.gif", 
-            image.width = 100
-          )
-        ) 
+      id = ns("panel"), 
+      shinycssloaders::withSpinner(
+        plotOutput(ns("plot"), width = "100%", height = 400), 
+        image = "images/bioinf1.gif", 
+        image.width = 100
+      ),
+      selectInput(
+        inputId = ns("select_variable"),
+        label = NULL,
+        choices = ""
       )  
     ),
     # so that the saved plot is the same size as the plot on the screen
@@ -137,14 +123,14 @@ density_plot <- function(plotting_data, condition, n_samples){
   
   ggplot2::ggplot(plotting_data, ggplot2::aes(x = value, fill = .data[[condition]])) +
     ggplot2::geom_density(alpha = 0.5, size = 1) +
-    ggplot2::ggtitle("\nDistribution of data values\n") +
+    #ggplot2::ggtitle("\nDistribution of data values\n") +
     ggplot2::scale_fill_manual(values = my_colours) +
     ggplot2::theme(
       legend.title = ggplot2::element_blank(),
       legend.text  = ggplot2::element_text(size = 8),
       axis.title   = ggplot2::element_text(size = 20),
       axis.text    = ggplot2::element_text(size = 14),
-      title        = ggplot2::element_text(size = 22),
+     # title        = ggplot2::element_text(size = 22),
       legend.spacing.x = ggplot2::unit(0.2, 'cm')
     )
 }
