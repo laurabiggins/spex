@@ -2,8 +2,16 @@
   background-color: purple;
 }
 
-/*
-#explore3 {
-  background-color: red;
+ul.nav.navbar-nav>li {
+  padding: 2px 5px;
+  font: bold 20px Arial;
+  text-decoration: none;
+  background-color: #ff6600e6;
+  color: black;
+  margin: 2px 10px;
+  border-radius: 8px;
 }
-*/
+
+.navbar-header {
+  padding-right: 100px;
+}

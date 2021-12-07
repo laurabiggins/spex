@@ -1,11 +1,12 @@
 library(shiny)
 library(magrittr)
+library(shinydashboard)
 
 show_browser <- TRUE
 
 # for accessing data from spex upload location
-data_location <- "/data/private/shiny_scripts/spex_upload/inst/extdata/" 
-#data_location <- "inst/extdata/"
+#data_location <- "/data/private/shiny_scripts/spex_upload/inst/extdata/" 
+data_location <- "inst/extdata/"
 folders <- basename(list.dirs(data_location))
 available_datasets <- folders[folders != "extdata"]
 
@@ -29,9 +30,6 @@ appCSS <- "
 
 # UI ----
 ui <- tagList(
-  
-  #bootstrapDep,
-
   fluidPage(
     shinyFeedback::useShinyFeedback(),
     shinyjs::useShinyjs(),
@@ -54,23 +52,22 @@ ui <- tagList(
       primary = bab_light_blue,
       secondary = bab_light_blue
     ),
-    titlePanel(
-        tags$img(
-          src = "images/BI_logo_grey.png", 
-          style="margin-top: -10px; padding-right:10px; padding-bottom:10px", 
-          width = "80", 
-          height = "85",
-          align = "right"
-        ),
-        windowTitle="spex"
-      ),
-      br(),
-      tabsetPanel(
+    # titlePanel(
+    #     tags$img(
+    #       src = "images/BI_logo_grey.png", 
+    #       style="margin-top: -10px; padding-right:10px; padding-bottom:10px", 
+    #       width = "80", 
+    #       height = "85",
+    #       align = "right"
+    #     ),
+    #     windowTitle="spex"
+    #   ),
+    #   br(),
+    #  tabsetPanel(
+    navbarPage(title = "Spex",
         id = "main_panels",
   ## info panel ----
-        tabPanel(
-          "info",
-          br(),
+        tabPanel(title = "info", 
           div(
             id = "loading-content",
             h2("Loading...")
