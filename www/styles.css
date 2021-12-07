@@ -16,7 +16,7 @@ ul.nav.navbar-nav>li {
   padding-right: 100px;
 }
 
-.navbar, .navbar-default, .navbar-static-top, .box-header, .box-body, .content {
+.navbar, .navbar-default, .navbar-static-top, .box-body, .content {
   background-color: #1d305f;
 }
 
@@ -24,12 +24,27 @@ ul.nav.navbar-nav>li {
   color: black;
 }
 
-button:active{
-    background:olive;
+#dataset_name {
+  font-size: 20px;
+  
 }
 
-button:focus{
-    background:olive;
+.box {
+   border: 3px solid;
+   border-color: #ff6600e6;
+}
+
+.box-body {
+  border-radius: 3px;
+  border-color: #ff6600e6;
+}
+
+.box-header {
+  /*background: #ff6600e6;
+  background-color: #ff6600e6;*/
+  background-color: #1d305f;
+  color: white;
+  padding: 10px;
 }
 
 body {

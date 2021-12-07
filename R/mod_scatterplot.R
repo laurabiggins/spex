@@ -35,7 +35,7 @@ mod_scatterplot_ui <- function(id){
             label = "y axis", 
             choices = "" 
           ),
-          actionButton(ns("browser"), "browser"),
+          #actionButton(ns("browser"), "browser"),
           #br(),
           br(),
           downloadButton(ns("download_png"), "png"),
@@ -50,7 +50,6 @@ mod_scatterplot_ui <- function(id){
           )
         )
       ),
-      br(),
       checkboxInput(inputId = "highlight_panel", label = "show highlight options"),
       conditionalPanel(
         condition = "input.highlight_panel == 1",

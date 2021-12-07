@@ -46,131 +46,105 @@ ui <- tagList(
        })"
       )
     ),
-    # theme = bslib::bs_theme(
-    #   bg = bab_dark_blue,
-    #   fg = "white",
-    #   primary = bab_light_blue,
-    #   secondary = bab_light_blue
-    # ),
-    # titlePanel(
-    #     tags$img(
-    #       src = "images/BI_logo_grey.png", 
-    #       style="margin-top: -10px; padding-right:10px; padding-bottom:10px", 
-    #       width = "80", 
-    #       height = "85",
-    #       align = "right"
-    #     ),
-    #     windowTitle="spex"
-    #   ),
-    #   br(),
-    #  tabsetPanel(
+
     navbarPage(title = "Spex",
         id = "main_panels",
   ## info panel ----
         tabPanel(title = "info", 
-          div(
-            id = "loading-content",
-            h2("Loading...")
-          ),
-          shinyjs::hidden(
-            div(
-              id = "app-content",
-          sidebarLayout(
-            sidebarPanel(
-              width = 3,
-              selectInput(
-                inputId = "choose_dataset",
-                label = NULL,
-                choices = c("choose dataset", available_datasets)
+          # div(
+          #   id = "loading-content",
+          #   h2("Loading...")
+          # ),
+          # shinyjs::hidden(
+          #   div(
+          #     id = "app-content",
+          # sidebarLayout(
+          #   sidebarPanel(
+          #     width = 3,
+          #     
+          dashboardPage(
+            dashboardHeader(disable = TRUE),
+            dashboardSidebar(disable = TRUE),
+            dashboardBody(
+              fluidRow(
+                box(
+                  #title = "Select dataset",
+                  width = 3, 
+                  collapsible = TRUE,
+                  selectInput(
+                    inputId = "choose_dataset",
+                    label = NULL,
+                    choices = c("choose dataset", available_datasets)
+                  ),
+                  actionButton(inputId = "load_data", label = "load dataset")
+                ),
+                box(
+                  #title = "Description", 
+                  collapsible = TRUE,
+                  width = 9,
+                  textOutput(outputId = "dataset_name"),
+                  br(),
+                  textOutput(outputId = "dataset_info")
+                )
               ),
-              actionButton(inputId = "load_data", label = "load dataset"),
-              br(),
-              br(),
-              p(id="explore", "Explore your chosen dataset by using the tabs above."),
-              p(id="explore2", "Sample names and experimental conditions are shown in the metadata section."),
-              p(id="explore3","The data tab shows the whole dataset, which can be downloaded if required."),
-              p(id="explore4","A range of plots can be viewed and downloaded to explore different aspects of the dataset.")
-            ),
-            mainPanel(
-              br(),
-              h1(textOutput(outputId = "dataset_name"), align = "center"),
-              br(),
-              h5(textOutput(outputId = "dataset_info")),
-              br(),br(),br(),
-              br(),br(),br(),br(),br(),br(),br(),
-              h6("For more information about work carried out at the Babraham Institute
-                   visit the", a(href= "https://www.babraham.ac.uk/", "website")),
-              br(),br(),br(),br()
-            )
-          ) 
-        )
-        )
-        ),
-  ## metadata panel ----
-        tabPanel(
-          "metadata",
-          br(),
-          fluidRow(
-            column(
-              width = 6,
-              wellPanel(align = "center",
-                h3("Dataset summary", align = "center", style="margin: 10px;"),
-                textOutput("meta_info1"),
-                textOutput("meta_info2"),
-                h6("Number of categories in each condition:"),
-                tableOutput("meta_info3"),
-                checkboxInput("show_meta_summary", "show more information on conditions"),
-                conditionalPanel(
-                  condition = "input.show_meta_summary == 1",
-                  fluidRow(
-                    column(
-                      width = 4,
-                      selectInput(
-                        "selected_condition",
-                        "select condition",
-                        choices = ""
+              fluidRow(
+                box(
+                  title = "Dataset summary",
+                  collapsible = TRUE,
+                  textOutput("meta_info1"),
+                  textOutput("meta_info2"),
+                  h6("Number of categories in each condition:"),
+                  tableOutput("meta_info3"),
+                  checkboxInput("show_meta_summary", "show more information on conditions"),
+                  conditionalPanel(
+                    condition = "input.show_meta_summary == 1",
+                    fluidRow(
+                      column(
+                        width = 4,
+                        selectInput(
+                          "selected_condition",
+                          "select condition",
+                          choices = ""
+                        ),
                       ),
-                    ),
-                    column(width = 8, tableOutput("meta_summary"))
+                      column(width = 8, tableOutput("meta_summary"))
+                    )
+                  ),
+                  checkboxInput("show_meta", "show all metadata"),
+                  conditionalPanel(
+                    condition = "input.show_meta == 1",
+                    DT::dataTableOutput("meta_table")
                   )
                 ),
-                checkboxInput("show_meta", "show all metadata"),
-                conditionalPanel(
-                  condition = "input.show_meta == 1",
-                  DT::dataTableOutput("meta_table")
-                ),
-              if(show_browser) actionButton("browser", "browser")
-              )
-            ),
-            column(
-              width = 6,
-              wellPanel(align = "center",
-                h3("Sets of interest", align = "center", style="margin: 10px;"),
-                textOutput("set_info1"),
-                h6("Number in each set:"),
-                tableOutput("set_info2"),
-                checkboxInput("show_sets", "show items in set"),
-                conditionalPanel(
-                  condition = "input.show_sets == 1",
-                  fluidRow(
-                    column(
-                      width = 4,
-                      selectInput(
-                        "selected_set",
-                        "select set",
-                        choices = ""
-                      )
-                    ),
-                    column(width = 8, tableOutput("set_summary"))
+                box(
+                  title = "Sets of interest",
+                  collapsible = TRUE,
+                  textOutput("set_info1"),
+                  h6("Number in each set:"),
+                  tableOutput("set_info2"),
+                  checkboxInput("show_sets", "show items in set"),
+                  conditionalPanel(
+                    condition = "input.show_sets == 1",
+                    fluidRow(
+                      column(
+                        width = 4,
+                        selectInput(
+                          "selected_set",
+                          "select set",
+                          choices = ""
+                        )
+                      ),
+                      column(width = 8, tableOutput("set_summary"))
+                    )
                   )
                 )
               )
-            )  
-          ),
-          br(),
-          br()
+            )
+          ),  
+          h6("For more information about work carried out at the Babraham Institute
+               visit the", a(href= "https://www.babraham.ac.uk/", "website")),
+          br(),br(),br(),br()
         ),
-  ## data panel ----
         tabPanel(
           "data",
           br(),
@@ -187,20 +161,16 @@ ui <- tagList(
             dashboardSidebar(disable = TRUE),
             dashboardBody(
               fluidRow(
-                  box(title = "histogram", 
-                      status = "primary", 
-                      solidHeader = TRUE, 
-                      collapsible = TRUE, 
-                      background = "blue", 
-                      mod_histogramUI("hist")
-                  ),
-                  box(title = "scatterplot", 
-                      status = "primary", 
-                      solidHeader = TRUE, 
-                      collapsible = TRUE, 
-                      #background = "blue",
-                      mod_scatterplot_ui("scatter")
-                  )
+                box(
+                  #title = "histogram", 
+                  collapsible = TRUE, 
+                  mod_histogramUI("hist")
+                ),
+                box(
+                  #title = "scatterplot", 
+                  collapsible = TRUE, 
+                  mod_scatterplot_ui("scatter")
+                )
               )
               #tabPanel("heatmap", mod_heatmap_ui("heatmap")),
               #tabPanel("violinplot", mod_violinplot_ui("violinplot"))
