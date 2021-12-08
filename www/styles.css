@@ -32,10 +32,11 @@ ul.nav.navbar-nav>li {
 .box {
    border: 3px solid;
    border-color: #ff6600e6;
+   border-radius: 3px;
 }
 
 .box-body {
-  border-radius: 3px;
+  /*border-radius: 3px;*/
   border-color: #ff6600e6;
 }
 
@@ -45,6 +46,10 @@ ul.nav.navbar-nav>li {
   background-color: #1d305f;
   color: white;
   padding: 10px;
+}
+
+.content-wrapper {
+  background-color: #1d305f;
 }
 
 body {

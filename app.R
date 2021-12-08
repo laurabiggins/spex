@@ -51,97 +51,59 @@ ui <- tagList(
         id = "main_panels",
   ## info panel ----
         tabPanel(title = "info", 
-          # div(
-          #   id = "loading-content",
-          #   h2("Loading...")
-          # ),
-          # shinyjs::hidden(
-          #   div(
-          #     id = "app-content",
-          # sidebarLayout(
-          #   sidebarPanel(
-          #     width = 3,
-          #     
           dashboardPage(
             dashboardHeader(disable = TRUE),
             dashboardSidebar(disable = TRUE),
             dashboardBody(
               fluidRow(
                 box(
-                  #title = "Select dataset",
+                  title = "Select dataset",
                   width = 3, 
                   collapsible = TRUE,
-                  selectInput(
-                    inputId = "choose_dataset",
-                    label = NULL,
-                    choices = c("choose dataset", available_datasets)
-                  ),
-                  actionButton(inputId = "load_data", label = "load dataset")
+                  wellPanel(
+                    selectInput(
+                      inputId = "choose_dataset",
+                      label = NULL,
+                      choices = c("choose dataset", available_datasets)
+                    ),
+                    actionButton(inputId = "load_data", label = "load dataset")
+                  )
                 ),
-                box(
-                  #title = "Description", 
-                  collapsible = TRUE,
-                  width = 9,
-                  textOutput(outputId = "dataset_name"),
-                  br(),
-                  textOutput(outputId = "dataset_info")
+                conditionalPanel(
+                  condition = "input.choose_dataset != 'choose dataset'",
+                  box(
+                    title = "Description", 
+                    collapsible = TRUE,
+                    width = 9,
+                    wellPanel(
+                      textOutput(outputId = "dataset_name"),
+                      br(),
+                      textOutput(outputId = "dataset_info")
+                    )
+                  )
                 )
               ),
               fluidRow(
-                box(
-                  title = "Dataset summary",
-                  collapsible = TRUE,
-                  textOutput("meta_info1"),
-                  textOutput("meta_info2"),
-                  h6("Number of categories in each condition:"),
-                  tableOutput("meta_info3"),
-                  checkboxInput("show_meta_summary", "show more information on conditions"),
-                  conditionalPanel(
-                    condition = "input.show_meta_summary == 1",
-                    fluidRow(
-                      column(
-                        width = 4,
-                        selectInput(
-                          "selected_condition",
-                          "select condition",
-                          choices = ""
-                        ),
-                      ),
-                      column(width = 8, tableOutput("meta_summary"))
-                    )
-                  ),
-                  checkboxInput("show_meta", "show all metadata"),
-                  conditionalPanel(
-                    condition = "input.show_meta == 1",
-                    DT::dataTableOutput("meta_table")
+                conditionalPanel(
+                  condition = "input.choose_dataset != 'choose dataset'",
+                  box(
+                    title = "Dataset summary",
+                    collapsible = TRUE,
+                    uiOutput(outputId = "all_dataset_summary")
                   )
                 ),
-                box(
-                  title = "Sets of interest",
-                  collapsible = TRUE,
-                  textOutput("set_info1"),
-                  h6("Number in each set:"),
-                  tableOutput("set_info2"),
-                  checkboxInput("show_sets", "show items in set"),
-                  conditionalPanel(
-                    condition = "input.show_sets == 1",
-                    fluidRow(
-                      column(
-                        width = 4,
-                        selectInput(
-                          "selected_set",
-                          "select set",
-                          choices = ""
-                        )
-                      ),
-                      column(width = 8, tableOutput("set_summary"))
-                    )
+                conditionalPanel(
+                  condition = "input.choose_dataset != 'choose dataset'",
+                  box(
+                    title = "Sets of interest",
+                    collapsible = TRUE,
+                    uiOutput(outputId = "all_set_info")
                   )
                 )
               )
             )
           ),  
-          h6("For more information about work carried out at the Babraham Institute
+          p("For more information about work carried out at the Babraham Institute
                visit the", a(href= "https://www.babraham.ac.uk/", "website")),
           br(),br(),br(),br()
         ),
@@ -162,12 +124,12 @@ ui <- tagList(
             dashboardBody(
               fluidRow(
                 box(
-                  #title = "histogram", 
+                  title = "histogram", 
                   collapsible = TRUE, 
                   mod_histogramUI("hist")
                 ),
                 box(
-                  #title = "scatterplot", 
+                  title = "scatterplot", 
                   collapsible = TRUE, 
                   mod_scatterplot_ui("scatter")
                 )
@@ -185,6 +147,7 @@ ui <- tagList(
         )
       ),
   ## footers ----
+      if(show_browser) actionButton("browser", "browser"),
       br(),
       fluidRow(
         column(
@@ -319,6 +282,45 @@ server <- function(input, output, session ) {
 
 ## metadata tab ----
 ### dataset summary ----  
+### 
+  output$all_dataset_summary <- renderUI({
+    if(!isTruthy(rv$dataset)) {
+      welltags <- p("Load a dataset to see summary information.")
+    } else {
+      welltags <- tagList(
+        textOutput("meta_info1"),
+        textOutput("meta_info2"),
+        h6("Number of categories in each condition:"),
+        tableOutput("meta_info3"),
+        checkboxInput("show_meta_summary", "show more information on conditions"),
+        conditionalPanel(
+          condition = "input.show_meta_summary == 1",
+          fluidRow(
+            column(
+              width = 4,
+              selectInput(
+                "selected_condition",
+                "select condition",
+                choices = ""
+              ),
+            ),
+            column(width = 8, tableOutput("meta_summary"))
+          )
+        ),
+        checkboxInput("show_meta", "show all metadata"),
+        conditionalPanel(
+          condition = "input.show_meta == 1",
+          DT::dataTableOutput("meta_table")
+        )
+      )
+    }
+    wellPanel(
+      class = "info_panel",
+      welltags
+    )
+  })
+  
+### 
 #### info that's always present if data is loaded ----   
   output$meta_info1 <- renderText({
     req(rv$metadata)
@@ -362,13 +364,50 @@ server <- function(input, output, session ) {
     rv$metadata$meta_summary[[input$selected_condition]]
   })
   
-### Sets of interest ----    
+### Sets of interest ----  
+###
+  output$all_set_info <- renderUI({
+    if(!isTruthy(rv$dataset)) {
+      welltags <- p("These can be sets of genes/proteins etc. of special interest that can be highlighted on plots.")
+    } else {
+      if(!isTruthy(rv$measures_of_interest)){
+        welltags <- p("No sets of interest available, add some using the filter options.")
+      } else {
+        welltags <- tagList(
+          textOutput("set_info1"),
+          h6("Number in each set:"),
+          tableOutput("set_info2"),
+          checkboxInput("show_sets", "show items in set"),
+          conditionalPanel(
+            condition = "input.show_sets == 1",
+            fluidRow(
+              column(
+                width = 4,
+                selectInput(
+                  "selected_set",
+                  "select set",
+                  choices = ""
+                )
+              ),
+              column(width = 8, tableOutput("set_summary"))
+            )
+          )
+        )
+      }
+    }
+    wellPanel(
+      id = "sets_of_interest_panel", 
+      class = "info_panel",
+      welltags
+    )
+  })
+  
   output$set_info1 <- renderText({
     req(rv$measures_of_interest)
     n_sets <- length(rv$measures_of_interest)
     if(n_sets == 1) text <- " set available"
     else text <- " sets available"
-    paste0(n_sets, text, ". To add more, use the filter tab.")
+    paste0(n_sets, text, ". To add more, use the filter options.")
   })  
   
   output$set_info2 <- renderTable({
