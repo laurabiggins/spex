@@ -14,31 +14,20 @@ mod_violinplot_ui <- function(id){#, meta_sum){
   tagList(
     wellPanel(
       id = ns("panel"),
-      sidebarLayout(
-        position = "right",
-        sidebarPanel(
-          width = 4,
-          selectInput(
-            inputId = ns("select_condition"),
-            label = "select variable",
-            choices = "",
-          ),
-          br(),
-          checkboxInput(ns("add_boxplot"), "add boxplot"),
-          br(),
-          downloadButton(ns("download_png"), "png"),
-          downloadButton(ns("download_pdf"), "pdf"),
-          actionButton(ns("browser"), "browser")
-        ),
-        mainPanel(
-          width = 8,
-          shinycssloaders::withSpinner(
-            plotOutput(ns("plot"), width = "100%", height = 500), 
-            image = "images/bioinf1.gif", 
-            image.width = 100
-          )
-        )
-      )  
+      shinycssloaders::withSpinner(
+        plotOutput(ns("plot"), width = "100%", height = 500), 
+        image = "images/bioinf1.gif", 
+        image.width = 100
+      ),
+      selectInput(
+        inputId = ns("select_condition"),
+        label = "select variable",
+        choices = "",
+      ),
+      checkboxInput(ns("add_boxplot"), "add boxplot")
+      #downloadButton(ns("download_png"), "png"),
+      #downloadButton(ns("download_pdf"), "pdf"),
+      #actionButton(ns("browser"), "browser")
     ),
     tags$script(
       "var myWidth = 0;

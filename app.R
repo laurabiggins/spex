@@ -14,6 +14,8 @@ sample_names <- "sample_name"
 bab_light_blue <- "#00aeef"
 bab_dark_blue <- "#1d305f"
 
+box_height <- 350
+
 appCSS <- "
 #loading-content {
   position: absolute;
@@ -58,28 +60,40 @@ ui <- tagList(
               fluidRow(
                 box(
                   title = "Select dataset",
-                  width = 3, 
+                  width = 3,
+                  height = box_height,
                   collapsible = TRUE,
+                  br(),
+                  br(),
+                  br(),
                   wellPanel(
                     selectInput(
                       inputId = "choose_dataset",
                       label = NULL,
                       choices = c("choose dataset", available_datasets)
                     ),
-                    actionButton(inputId = "load_data", label = "load dataset")
+                    actionButton(inputId = "load_data", label = "load dataset",)
                   )
                 ),
-                conditionalPanel(
-                  condition = "input.choose_dataset != 'choose dataset'",
-                  box(
-                    title = "Description", 
-                    collapsible = TRUE,
-                    width = 9,
+                tabBox(
+                  id = "description_etc",
+                  width = 9, 
+                  height = box_height,
+                  tabPanel(
+                    title = "Description",
                     wellPanel(
                       textOutput(outputId = "dataset_name"),
                       br(),
                       textOutput(outputId = "dataset_info")
                     )
+                  ),
+                  tabPanel(
+                      title = "Sets of interest",
+                      uiOutput(outputId = "all_set_info")
+                  ),
+                  tabPanel(
+                    title = "Dataset summary",
+                    uiOutput(outputId = "all_dataset_summary")
                   )
                 )
               ),
@@ -87,20 +101,14 @@ ui <- tagList(
                 conditionalPanel(
                   condition = "input.choose_dataset != 'choose dataset'",
                   box(
-                    title = "Dataset summary",
+                    width = 12,
+                    title = "filter",
                     collapsible = TRUE,
-                    uiOutput(outputId = "all_dataset_summary")
-                  )
-                ),
-                conditionalPanel(
-                  condition = "input.choose_dataset != 'choose dataset'",
-                  box(
-                    title = "Sets of interest",
-                    collapsible = TRUE,
-                    uiOutput(outputId = "all_set_info")
+                    collapsed = TRUE,
+                    uiOutput(outputId = "all_filters")
                   )
                 )
-              )
+              )  
             )
           ),  
           p("For more information about work carried out at the Babraham Institute
@@ -133,17 +141,24 @@ ui <- tagList(
                   collapsible = TRUE, 
                   mod_scatterplot_ui("scatter")
                 )
+              ),
+              fluidRow(
+                box(
+                  title = "heatmap",
+                  collapsible = TRUE,
+                  width = 12,
+                  mod_heatmap_ui("heatmap")
+                )
+              ),
+              fluidRow(
+                box(
+                  title = "violinplot",
+                  collapsible = TRUE,
+                  mod_violinplot_ui("violinplot")
+                )
               )
-              #tabPanel("heatmap", mod_heatmap_ui("heatmap")),
-              #tabPanel("violinplot", mod_violinplot_ui("violinplot"))
             )
           )
-        ),
-  ## filter panel ----
-        tabPanel(
-          "filter",
-          br(),
-          mod_name_filter_ui("name_filter")
         )
       ),
   ## footers ----
@@ -420,6 +435,15 @@ server <- function(input, output, session ) {
     req(input$selected_set)
     req(rv$measures_of_interest)
     rv$measures_of_interest[[input$selected_set]]
+  })
+  
+  ### filter panel ----
+  output$all_filters <- renderUI({
+    if(!isTruthy(rv$dataset)) {
+      wellPanel(p("Load dataset to see filter options.")) 
+    } else {
+      wellPanel(mod_name_filter_ui("name_filter"))
+    }
   })
   
   ## data tab ----

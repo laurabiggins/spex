@@ -15,63 +15,65 @@ mod_scatterplot_ui <- function(id){
   tagList(
     wellPanel(
       id = ns("panel"),
-      sidebarLayout(
-        position = "right",
-        sidebarPanel(
-          style = "padding: 10px",
-          width = 4,
-          selectInput(
-            inputId = ns("select_condition"),
-            label = "select variable",
-            choices = ""
-          ),
-          selectInput(
-            ns("x_axis"), 
-            label = "x axis", 
-            choices = ""
-          ),
-          selectInput(
-            ns("y_axis"), 
-            label = "y axis", 
-            choices = "" 
-          ),
-          #actionButton(ns("browser"), "browser"),
-          #br(),
-          br(),
-          downloadButton(ns("download_png"), "png"),
-          downloadButton(ns("download_pdf"), "pdf")
-        ),
-        mainPanel(
-          width = 8,
+      verticalLayout(
+        wellPanel(
           shinycssloaders::withSpinner(
             plotOutput(ns("plot"), width = "100%", height = 400), 
             image = "images/bioinf1.gif", 
             image.width = 100, image.height = 40
           )
-        )
-      ),
-      checkboxInput(inputId = "highlight_panel", label = "show highlight options"),
-      conditionalPanel(
-        condition = "input.highlight_panel == 1",
+        ),
         wellPanel(
           fluidRow(
-            column(
-              width = 6, 
+            column(width = 4, 
               selectInput(
-                ns("set_to_highlight"),
-                "choose set",
+                inputId = ns("select_condition"),
+                label = "select variable",
                 choices = ""
               )
             ),
-            column(
-              width = 6, 
-              checkboxInput(ns("highlight_genes"), label = "highlight set"),
-              checkboxInput(inputId = ns("label_highlights"), label = "show labels")
+            column(width = 4, 
+              selectInput(
+                ns("x_axis"), 
+                label = "x axis", 
+                choices = ""
+              )
+            ),
+            column(width = 4, 
+              selectInput(
+                ns("y_axis"), 
+                label = "y axis", 
+                choices = "" 
+              )
+            )
+          ),  
+          #actionButton(ns("browser"), "browser"),
+          #downloadButton(ns("download_png"), "png"),
+          #downloadButton(ns("download_pdf"), "pdf")
+        ),
+        checkboxInput(inputId = "highlight_panel", label = "show highlight options"),
+        conditionalPanel(
+          condition = "input.highlight_panel == 1",
+          wellPanel(
+            fluidRow(
+              column(
+                width = 6, 
+                selectInput(
+                  ns("set_to_highlight"),
+                  "choose set",
+                  choices = ""
+                )
+              ),
+              column(
+                width = 6, 
+                checkboxInput(ns("highlight_genes"), label = "highlight set"),
+                checkboxInput(inputId = ns("label_highlights"), label = "show labels")
+              )
             )
           )
-        )
-      )  
-    )
+        )  
+      )
+    )  
   )
 }
 
