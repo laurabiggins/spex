@@ -14,7 +14,7 @@ sample_names <- "sample_name"
 bab_light_blue <- "#00aeef"
 bab_dark_blue <- "#1d305f"
 
-box_height <- 350
+box_height <- 500
 
 appCSS <- "
 #loading-content {
@@ -48,143 +48,146 @@ ui <- tagList(
        })"
       )
     ),
-
-    navbarPage(title = "Spex",
-        id = "main_panels",
-  ## info panel ----
-        tabPanel(title = "info", 
-          dashboardPage(
-            dashboardHeader(disable = TRUE),
-            dashboardSidebar(disable = TRUE),
-            dashboardBody(
-              fluidRow(
-                box(
+    dashboardPage(
+      dashboardHeader(disable = TRUE),
+      dashboardSidebar(
+        width = 150,
+        h1("Spex", id = "main_title"),
+        tags$img(src = "images/spex_logo_rotated.png", width = "50", height = "50", id = "main_logo"),
+        sidebarMenu(id = "sidebar_menu",
+          menuItem("INFO", tabName = "INFO"),
+          menuItem("DATA", tabName = "DATA"),
+          menuItem("PLOTS", tabName = "PLOTS")
+        )
+      ),
+      dashboardBody(
+        tabItems(
+          tabItem(tabName = "INFO",
+            fluidRow(
+              tabBox(
+                id = "description_etc",
+                width = 12, 
+                height = box_height,
+                tabPanel(
                   title = "Select dataset",
-                  width = 3,
-                  height = box_height,
-                  collapsible = TRUE,
-                  br(),
-                  br(),
-                  br(),
-                  wellPanel(
-                    selectInput(
-                      inputId = "choose_dataset",
-                      label = NULL,
-                      choices = c("choose dataset", available_datasets)
-                    ),
-                    actionButton(inputId = "load_data", label = "load dataset",)
-                  )
-                ),
-                tabBox(
-                  id = "description_etc",
-                  width = 9, 
-                  height = box_height,
-                  tabPanel(
-                    title = "Description",
-                    wellPanel(
-                      textOutput(outputId = "dataset_name"),
-                      br(),
-                      textOutput(outputId = "dataset_info")
+                  fluidRow(
+                    column(width = 6, 
+                      wellPanel( 
+                        br(),
+                        selectInput(
+                          inputId = "choose_dataset",
+                          label = NULL,
+                          choices = c("choose dataset", available_datasets)
+                        ),
+                        actionButton(inputId = "load_data", label = "load dataset"),
+                        br(),
+                        br(),
+                        br(),
+                        textOutput(outputId = "currently_loaded_ds")
+                      )
                     )
-                  ),
-                  tabPanel(
-                      title = "Sets of interest",
-                      uiOutput(outputId = "all_set_info")
-                  ),
-                  tabPanel(
-                    title = "Dataset summary",
-                    uiOutput(outputId = "all_dataset_summary")
                   )
-                )
-              ),
-              fluidRow(
-                conditionalPanel(
-                  condition = "input.choose_dataset != 'choose dataset'",
-                  box(
-                    width = 12,
-                    title = "filter",
-                    collapsible = TRUE,
-                    collapsed = TRUE,
-                    uiOutput(outputId = "all_filters")
-                  )
-                )
-              )  
-            )
-          ),  
-          p("For more information about work carried out at the Babraham Institute
-               visit the", a(href= "https://www.babraham.ac.uk/", "website")),
-          br(),br(),br(),br()
-        ),
-        tabPanel(
-          "data",
-          br(),
-          wellPanel(
-            DT::dataTableOutput("data_table"),
-            downloadButton("download_csv", "download csv")
-          )
-        ),
-  ## plot panel ----
-        tabPanel(
-          "plot",
-          dashboardPage(
-            dashboardHeader(disable = TRUE),
-            dashboardSidebar(disable = TRUE),
-            dashboardBody(
-              fluidRow(
-                box(
-                  title = "histogram", 
-                  collapsible = TRUE, 
-                  mod_histogramUI("hist")
                 ),
-                box(
-                  title = "scatterplot", 
-                  collapsible = TRUE, 
-                  mod_scatterplot_ui("scatter")
+                tabPanel(
+                  title = "Description",
+                  wellPanel(
+                    textOutput(outputId = "dataset_name"),
+                    br(),
+                    textOutput(outputId = "dataset_info")
+                  )
+                ),
+                tabPanel(
+                    title = "Sets of interest",
+                    uiOutput(outputId = "all_set_info")
+                ),
+                tabPanel(
+                  title = "Dataset summary",
+                  uiOutput(outputId = "all_dataset_summary")
                 )
-              ),
-              fluidRow(
+              )
+            ),
+            fluidRow(
+              conditionalPanel(
+                condition = "input.choose_dataset != 'choose dataset'",
                 box(
-                  title = "heatmap",
-                  collapsible = TRUE,
                   width = 12,
-                  mod_heatmap_ui("heatmap")
-                )
-              ),
-              fluidRow(
-                box(
-                  title = "violinplot",
+                  title = "filter",
                   collapsible = TRUE,
-                  mod_violinplot_ui("violinplot")
+                  collapsed = TRUE,
+                  uiOutput(outputId = "all_filters")
                 )
+              )
+            ),  
+            p("For more information about work carried out at the Babraham Institute
+                 visit the", a(href= "https://www.babraham.ac.uk/", "website")),
+            br(),br(),br(),br(),
+          ),
+          tabItem(tabName = "DATA",
+            br(),
+            wellPanel(
+              DT::dataTableOutput("data_table"),
+              downloadButton("download_csv", "download csv")
+            )
+          ),
+          tabItem(tabName = "PLOTS",
+            fluidRow(
+              box(
+                width = 4,
+                class = "plotbox",
+                title = "histogram",
+                collapsible = TRUE,
+                mod_histogramUI("hist")
+              ),
+              box(
+                width = 4,
+                class = "plotbox",
+                title = "scatterplot",
+                collapsible = TRUE,
+                mod_scatterplot_ui("scatter")
+              ),
+              box(
+                width = 4,
+                title = "violinplot",
+                collapsible = TRUE,
+                mod_violinplot_ui("violinplot")
+              )
+            ),
+            fluidRow(
+              box(
+                title = "heatmap",
+                collapsible = TRUE,
+                width = 12,
+                mod_heatmap_ui("heatmap")
               )
             )
           )
         )
-      ),
-  ## footers ----
-      if(show_browser) actionButton("browser", "browser"),
-      br(),
-      fluidRow(
-        column(
-          width = 3,
-          tags$img(src = "images/bioinformatics_logo_small_grey.png", 
-                   width = "200", height = "71")
-        ),
-        column(
-          width = 6,
-          offset = 3,
-          br(),
-          br(),
-          p("Any problems please email laura.biggins@babraham.ac.uk", 
-            style = "font-size:12px", align = "right")
-        )  
-      ),
-      br()
+      )
     ),
+  ## footers ----
+    br(),
+    fluidRow(
+      column(
+        width = 3,
+        tags$img(src = "images/bioinformatics_logo_small_grey.png",
+                 width = "200", height = "71")
+      ),
+      column(
+        width = 6,
+        offset = 3,
+        br(),
+        br(),
+        p("Any problems please email laura.biggins@babraham.ac.uk",
+          style = "font-size:12px", align = "right")
+      )
+    ),
+    br(),
     # tags$script(
   #   "var exploreText = document.getElementById('explore');
   #         exploreText.style.backgroundColor = 'red';"
   # ),
+    if(show_browser) actionButton("browser", "browser")
+  ),
   tags$script(src = "script.js")
 )
 
@@ -279,6 +282,15 @@ server <- function(input, output, session ) {
      }
   })
 
+  output$currently_loaded_ds <- renderText({
+    
+    if(chosen_dataset() == "choose dataset") {
+      "No dataset currently loaded"
+    } else {
+      paste0(chosen_dataset(), " is currently loaded.")
+    }
+  })
+  
 ## info tab ----    
   output$dataset_name <- renderText({
     chosen_dataset()
@@ -287,7 +299,7 @@ server <- function(input, output, session ) {
   output$dataset_info <- renderText({
     
     if(chosen_dataset() == "choose dataset") {
-      "Choose a dataset from the dropdown on the left"
+      "Choose a dataset"
     } else {
       #"populate this with an info file"
       rv$info$summary_info

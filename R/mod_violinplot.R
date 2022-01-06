@@ -15,7 +15,7 @@ mod_violinplot_ui <- function(id){#, meta_sum){
     wellPanel(
       id = ns("panel"),
       shinycssloaders::withSpinner(
-        plotOutput(ns("plot"), width = "100%", height = 500), 
+        plotOutput(ns("plot"), width = "100%", height = 400), 
         image = "images/bioinf1.gif", 
         image.width = 100
       ),
