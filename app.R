@@ -10,6 +10,8 @@ data_location <- "inst/extdata/"
 folders <- basename(list.dirs(data_location))
 available_datasets <- folders[folders != "extdata"]
 
+data_summary_table <- readRDS("inst/extdata/summary_info.rds")
+
 sample_names <- "sample_name"
 bab_light_blue <- "#00aeef"
 bab_dark_blue <- "#1d305f"
@@ -53,15 +55,24 @@ ui <- tagList(
       dashboardSidebar(
         width = 150,
         h1("Spex", id = "main_title"),
-        tags$img(src = "images/spex_logo_rotated.png", width = "50", height = "50", id = "main_logo"),
         sidebarMenu(id = "sidebar_menu",
+          menuItem("BROWSE", tabName = "BROWSE"),
           menuItem("INFO", tabName = "INFO"),
           menuItem("DATA", tabName = "DATA"),
           menuItem("PLOTS", tabName = "PLOTS")
-        )
+        ),
+        br(),
+        br(),
+        br(),
+        tags$img(src = "images/spex_logo_grey.png", width = "70", height = "50", id = "main_logo")
       ),
       dashboardBody(
         tabItems(
+          tabItem(tabName = "BROWSE",
+            wellPanel(
+              DT::dataTableOutput("summary_table_all")
+            )        
+          ),
           tabItem(tabName = "INFO",
             fluidRow(
               tabBox(
@@ -187,8 +198,9 @@ ui <- tagList(
   #         exploreText.style.backgroundColor = 'red';"
   # ),
     if(show_browser) actionButton("browser", "browser")
-  ),
-  tags$script(src = "script.js")
+  )#,
+  #tags$script(src = "script.js")#,
+  #tags$script(src = "spex_home.js")
 )
 
 
@@ -214,19 +226,19 @@ server <- function(input, output, session ) {
     chosen_dataset(input$choose_dataset)
   })
       
-  observeEvent(input$pre_chosen_dataset, {
-    req(input$pre_chosen_dataset)
-    print("from pre_chosen_dataset")
-    cleaned_choice <- substring(input$pre_chosen_dataset, 2) # remove hash
-    if(cleaned_choice %in%  available_datasets){
-      chosen_dataset(cleaned_choice) 
-      updateSelectInput(
-        inputId = "choose_dataset",
-        choices = c("choose dataset", available_datasets),
-        selected = cleaned_choice
-      )
-    }
-  })
+  # observeEvent(input$pre_chosen_dataset, {
+  #   req(input$pre_chosen_dataset)
+  #   print("from pre_chosen_dataset")
+  #   cleaned_choice <- substring(input$pre_chosen_dataset, 2) # remove hash
+  #   if(cleaned_choice %in%  available_datasets){
+  #     chosen_dataset(cleaned_choice) 
+  #     updateSelectInput(
+  #       inputId = "choose_dataset",
+  #       choices = c("choose dataset", available_datasets),
+  #       selected = cleaned_choice
+  #     )
+  #   }
+  # })
   
   ## load data ----     
   #observeEvent(input$load_data, {
@@ -237,11 +249,7 @@ server <- function(input, output, session ) {
         # need checks here that the locations exist
         data_folder <- paste0(data_location, chosen_dataset(), "/")
         
-        #if(file.exists(paste0(data_folder, "dataset.feather"))){
-        #  dataset <- feather::read_feather(paste0(data_folder, "dataset.feather"))
-       # } else {
-          dataset  <- readRDS(paste0(data_folder, "dataset.rds"))
-       # }
+        dataset  <- readRDS(paste0(data_folder, "dataset.rds"))
                                           
         metadata_processed  <- readRDS(paste0(data_folder, "metadata.rds"))
         
@@ -290,7 +298,39 @@ server <- function(input, output, session ) {
       paste0(chosen_dataset(), " is currently loaded.")
     }
   })
+
+  ## browse tab ----
+  output$summary_table_all <- DT::renderDataTable({
+    
+    DT::datatable(
+      data_summary_table,
+      rownames = FALSE,
+      selection = "single",
+      options = list(
+        dom = "t",
+        scrollX = TRUE,
+        autoWidth = FALSE,
+        columnDefs = list(
+          list(
+            targets = c(1,2),
+            render = htmlwidgets::JS(
+              "function(data, type, row, meta) {",
+              "return type === 'display' && data.length > 50 ?",
+              "'<span title=\"' + data + '\">' + data.substr(0, 50) + '...</span>' : data;",
+              "}")
+          )
+        )
+      )
+    )    
+  })
   
+  output$dataset_title <- renderText({
+    
+    
+    
+  })
+  
+    
 ## info tab ----    
   output$dataset_name <- renderText({
     chosen_dataset()
