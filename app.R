@@ -48,7 +48,14 @@ ui <- tagList(
        "$(document).on('shiny:connected', function() {
          Shiny.setInputValue('pre_chosen_dataset', document.location.hash, {priority: 'event'});
        })"
-      )
+      ),
+      tags$style(".inactiveLink {
+                 cursor: not-allowed;
+                 }
+                 .inactiveLink:active {
+                 pointer-events: none;
+                 }"
+                 )
     ),
     dashboardPage(
       dashboardHeader(disable = TRUE),
@@ -58,7 +65,11 @@ ui <- tagList(
         sidebarMenu(id = "sidebar_menu",
           menuItem("BROWSE", tabName = "BROWSE"),
           menuItem("INFO", tabName = "INFO"),
-          menuItem("DATA", tabName = "DATA"),
+          menuItem("DATA", tabName = "DATA", icon = NULL,
+            menuSubItem(text = "entire dataset", tabName = "all_data"),
+            menuSubItem(text = "data summary", tabName = "data_summary"),
+            menuSubItem(text = "sets of interest", tabName = "sets_of_interest")
+          ),
           menuItem("PLOTS", tabName = "PLOTS")
         ),
         br(),
@@ -67,12 +78,24 @@ ui <- tagList(
         tags$img(src = "images/spex_logo_grey.png", width = "70", height = "50", id = "main_logo")
       ),
       dashboardBody(
+        uiOutput(outputId = "info_banner"),
+        #wellPanel(id = "banner-panel", 
+         #         textOutput(outputId="info_banner"),
+        #          ),
         tabItems(
+          ## browse tab ----
           tabItem(tabName = "BROWSE",
             wellPanel(
               DT::dataTableOutput("summary_table_all")
+            ),
+            wellPanel(
+              h2(textOutput(outputId = "selected_dataset_title")),
+              textOutput(outputId = "selected_dataset_citation"),
+              br(),
+              textOutput(outputId = "selected_dataset_summaryinfo")
             )        
           ),
+          ## info tab ----
           tabItem(tabName = "INFO",
             fluidRow(
               tabBox(
@@ -90,7 +113,7 @@ ui <- tagList(
                           label = NULL,
                           choices = c("choose dataset", available_datasets)
                         ),
-                        actionButton(inputId = "load_data", label = "load dataset"),
+                        #actionButton(inputId = "load_data", label = "load dataset"),
                         br(),
                         br(),
                         br(),
@@ -110,11 +133,12 @@ ui <- tagList(
                 tabPanel(
                     title = "Sets of interest",
                     uiOutput(outputId = "all_set_info")
-                ),
-                tabPanel(
-                  title = "Dataset summary",
-                  uiOutput(outputId = "all_dataset_summary")
                 )
+                # ),
+                # tabPanel(
+                #   title = "Dataset summary",
+                #   uiOutput(outputId = "all_dataset_summary")
+                # )
               )
             ),
             fluidRow(
@@ -133,14 +157,20 @@ ui <- tagList(
                  visit the", a(href= "https://www.babraham.ac.uk/", "website")),
             br(),br(),br(),br(),
           ),
-          tabItem(tabName = "DATA",
+          ## data tab ----
+          tabItem(tabName = "all_data",
             br(),
             wellPanel(
               DT::dataTableOutput("data_table"),
               downloadButton("download_csv", "download csv")
             )
           ),
-          tabItem(tabName = "PLOTS",
+          tabItem(tabName = "data_summary",
+            uiOutput(outputId = "all_dataset_summary")
+          ),
+          
+          ## plot tab ----
+          tabItem(tabName = "PLOTS", 
             fluidRow(
               box(
                 width = 4,
@@ -207,11 +237,55 @@ ui <- tagList(
 # server ----
 server <- function(input, output, session ) {
   
+  shinyjs::addCssClass(selector = "a[data-value='PLOTS']", class = "inactiveLink")
+  shinyjs::addCssClass(selector = "a[data-value='DATA']", class = "inactiveLink")
+  
+  output$info_banner_text <- renderText({
+     "Choose a dataset from the table"
+  })
+  
+  currently_loaded_dataset <- reactive({
+    if(chosen_dataset() == "choose dataset"){
+      msg <- "No dataset is currently loaded"
+    } else {
+      msg <- paste0(chosen_dataset(), " is currently loaded")
+    }
+    msg
+  })
+  
+  output$info_banner <- renderUI({
+    if(input$sidebar_menu == "BROWSE"){
+      if(is.null(input$summary_table_all_rows_selected)){
+        #textOutput(outputId = "info_banner_text")
+        bannertags <- tagList(
+          p("Choose dataset from table", class = "banner-text"),
+        )
+      } else if(chosen_dataset() != selected_dataset_name()) {
+        bannertags <- tagList(
+            actionButton(inputId = "load_dataset_btn", label = "load selected dataset", class = "button")
+        )
+      } else bannertags <- NULL
+    } else bannertags <- NULL
+ 
+    tagList(
+      bannertags,
+      p(id = "loaded_ds_msg", class = "banner-text", currently_loaded_dataset())
+    )
+  })
+  
+  
 ## reactive values ----  
   data_loaded <- reactiveVal(FALSE)
   
+  shinyjs::disable()
   #chosen_dataset <- eventReactive(input$load_data, input$choose_dataset)
 
+  selected_dataset_name <- reactive({
+    req(input$summary_table_all_rows_selected)
+    row_number <- as.numeric(input$summary_table_all_rows_selected)
+    data_summary_table$dataset_name[row_number] 
+  })
+  
   chosen_dataset <- reactiveVal("choose dataset")
   
   rv <- reactiveValues(
@@ -222,23 +296,27 @@ server <- function(input, output, session ) {
     metadata = NULL # list of accompanying metadata
   )
 
-  observeEvent(input$load_data, {
-    chosen_dataset(input$choose_dataset)
-  })
-      
-  # observeEvent(input$pre_chosen_dataset, {
-  #   req(input$pre_chosen_dataset)
-  #   print("from pre_chosen_dataset")
-  #   cleaned_choice <- substring(input$pre_chosen_dataset, 2) # remove hash
-  #   if(cleaned_choice %in%  available_datasets){
-  #     chosen_dataset(cleaned_choice) 
-  #     updateSelectInput(
-  #       inputId = "choose_dataset",
-  #       choices = c("choose dataset", available_datasets),
-  #       selected = cleaned_choice
-  #     )
-  #   }
+  # observeEvent(input$load_data, {
+  #   chosen_dataset(input$choose_dataset)
   # })
+      
+  observeEvent(input$load_dataset_btn, {
+    chosen_dataset(selected_dataset_name())
+  })
+  
+  observeEvent(input$pre_chosen_dataset, {
+    req(input$pre_chosen_dataset)
+    print("from pre_chosen_dataset")
+    cleaned_choice <- substring(input$pre_chosen_dataset, 2) # remove hash
+    if(cleaned_choice %in%  available_datasets){
+      chosen_dataset(cleaned_choice)
+      updateSelectInput(
+        inputId = "choose_dataset",
+        choices = c("choose dataset", available_datasets),
+        selected = cleaned_choice
+      )
+    }
+  })
   
   ## load data ----     
   #observeEvent(input$load_data, {
@@ -287,6 +365,12 @@ server <- function(input, output, session ) {
           label = "select condition",
           choices = names(rv$metadata$meta_summary)
         )
+        shinyjs::removeCssClass(selector = "a[data-value='PLOTS']", class = "inactiveLink")
+        shinyjs::removeCssClass(selector = "a[data-value='DATA']", class = "inactiveLink")
+      } else {
+       
+        shinyjs::addCssClass(selector = "a[data-value='PLOTS']", class = "inactiveLink")
+        shinyjs::addCssClass(selector = "a[data-value='DATA']", class = "inactiveLink")
      }
   })
 
@@ -324,10 +408,23 @@ server <- function(input, output, session ) {
     )    
   })
   
-  output$dataset_title <- renderText({
-    
-    
-    
+  
+  output$selected_dataset_title <- renderText({
+    req(input$summary_table_all_rows_selected)
+    row_number <- as.numeric(input$summary_table_all_rows_selected)
+    data_summary_table$dataset_name[row_number]  
+  })
+  
+  output$selected_dataset_summaryinfo <- renderText({
+    req(input$summary_table_all_rows_selected)
+    row_number <- as.numeric(input$summary_table_all_rows_selected)
+    data_summary_table$summary_info[row_number]  
+  })
+  
+  output$selected_dataset_citation <- renderText({
+    req(input$summary_table_all_rows_selected)
+    row_number <- as.numeric(input$summary_table_all_rows_selected)
+    data_summary_table$citation[row_number]  
   })
   
     

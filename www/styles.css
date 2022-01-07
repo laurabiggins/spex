@@ -194,6 +194,7 @@ body {
   color: black;
   padding: 5px 10px;
   margin: 20px 10px;
+  border: 0px;
   border-radius: 8px;
 }
 
@@ -201,4 +202,35 @@ body {
   font-size: 50px;
   text-align: center;
   padding: 20px;
+  margin: 0px
+}
+
+.inactiveLink {
+   cursor: not-allowed;
+}
+
+.inactiveLink:active {
+  pointer-events: none;
+}
+
+/*.info_banner {
+  background-color: black;
+  color: #ff6600e6;
+  font-size: 20px;
+  margin: 10px;
+}*/
+
+.banner-text {
+  text-align: center;
+  color: #ff6600e6;
+  font-size: 20px;
+}
+
+#load_dataset_btn {
+  margin: 0 auto;
+  display: block;
+}
+
+#loaded_ds_msg {
+  font-size: 16px;
 }
