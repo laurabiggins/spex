@@ -24,10 +24,10 @@ mod_violinplot_ui <- function(id){#, meta_sum){
         label = "select variable",
         choices = "",
       ),
-      checkboxInput(ns("add_boxplot"), "add boxplot")
+      checkboxInput(ns("add_boxplot"), "add boxplot")#,
       #downloadButton(ns("download_png"), "png"),
       #downloadButton(ns("download_pdf"), "pdf"),
-      #actionButton(ns("browser"), "browser")
+     # actionButton(ns("browser"), "browser")
     ),
     tags$script(
       "var myWidth = 0;

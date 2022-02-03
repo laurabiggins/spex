@@ -27,7 +27,7 @@ mod_histogramUI <- function(id){
       ),
       selectInput(
         inputId = ns("select_variable"),
-        label = NULL,
+        label = "select variable",
         choices = ""
       )  
     ),
