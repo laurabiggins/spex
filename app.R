@@ -4,6 +4,8 @@ library(shinydashboard)
 
 show_browser <- TRUE
 
+# TODO !! data summary and sets of interest do not update !!
+
 # for accessing data from spex upload location
 #data_location <- "/data/private/shiny_scripts/spex_upload/inst/extdata/" 
 data_location <- "inst/extdata/"
@@ -16,7 +18,7 @@ sample_names <- "sample_name"
 bab_light_blue <- "#00aeef"
 bab_dark_blue <- "#1d305f"
 
-box_height <- 500
+#box_height <- 900
 
 appCSS <- "
 #loading-content {
@@ -64,7 +66,6 @@ ui <- tagList(
         h1("Spex", id = "main_title"),
         sidebarMenu(id = "sidebar_menu",
           menuItem("BROWSE", tabName = "BROWSE"),
-          menuItem("INFO", tabName = "INFO"),
           menuItem("DATA", tabName = "DATA", icon = NULL,
             menuSubItem(text = "entire dataset", tabName = "all_data"),
             menuSubItem(text = "data summary", tabName = "data_summary"),
@@ -85,90 +86,26 @@ ui <- tagList(
         tabItems(
           ## browse tab ----
           tabItem(tabName = "BROWSE",
-            wellPanel(
+            wellPanel(class = "my_info_panel",
               DT::dataTableOutput("summary_table_all")
             ),
-            wellPanel(
+            wellPanel(id="selected_data_info", class = "my_info_panel",
               h2(textOutput(outputId = "selected_dataset_title")),
               textOutput(outputId = "selected_dataset_citation"),
               br(),
               textOutput(outputId = "selected_dataset_summaryinfo")
             )        
           ),
-          ## info tab ----
-          tabItem(tabName = "INFO",
-            fluidRow(
-              tabBox(
-                id = "description_etc",
-                width = 12, 
-                height = box_height,
-                tabPanel(
-                  title = "Select dataset",
-                  fluidRow(
-                    column(width = 6, 
-                      wellPanel( 
-                        br(),
-                        selectInput(
-                          inputId = "choose_dataset",
-                          label = NULL,
-                          choices = c("choose dataset", available_datasets)
-                        ),
-                        #actionButton(inputId = "load_data", label = "load dataset"),
-                        br(),
-                        br(),
-                        br(),
-                        textOutput(outputId = "currently_loaded_ds")
-                      )
-                    )
-                  )
-                ),
-                tabPanel(
-                  title = "Description",
-                  wellPanel(
-                    textOutput(outputId = "dataset_name"),
-                    br(),
-                    textOutput(outputId = "dataset_info")
-                  )
-                ),
-                tabPanel(
-                    title = "Sets of interest",
-                    uiOutput(outputId = "all_set_info")
-                )
-                # ),
-                # tabPanel(
-                #   title = "Dataset summary",
-                #   uiOutput(outputId = "all_dataset_summary")
-                # )
-              )
-            ),
-            fluidRow(
-              conditionalPanel(
-                condition = "input.choose_dataset != 'choose dataset'",
-                box(
-                  width = 12,
-                  title = "filter",
-                  collapsible = TRUE,
-                  collapsed = TRUE,
-                  uiOutput(outputId = "all_filters")
-                )
-              )
-            ),  
-            p("For more information about work carried out at the Babraham Institute
-                 visit the", a(href= "https://www.babraham.ac.uk/", "website")),
-            br(),br(),br(),br(),
-          ),
           ## data tab ----
           tabItem(tabName = "all_data",
-            br(),
-            wellPanel(
-              DT::dataTableOutput("data_table"),
-              downloadButton("download_csv", "download csv")
-            )
+                  uiOutput(outputId = "entire_dataset")
           ),
           tabItem(tabName = "data_summary",
-            uiOutput(outputId = "all_dataset_summary")
+                  uiOutput(outputId = "all_dataset_summary")
           ),
-          
+          tabItem(tabName = "sets_of_interest",
+                  uiOutput(outputId = "all_set_info")
+          ),
           ## plot tab ----
           tabItem(tabName = "PLOTS", 
             fluidRow(
@@ -223,14 +160,8 @@ ui <- tagList(
       )
     ),
     br(),
-    # tags$script(
-  #   "var exploreText = document.getElementById('explore');
-  #         exploreText.style.backgroundColor = 'red';"
-  # ),
     if(show_browser) actionButton("browser", "browser")
-  )#,
-  #tags$script(src = "script.js")#,
-  #tags$script(src = "spex_home.js")
+  )
 )
 
 
@@ -239,6 +170,7 @@ server <- function(input, output, session ) {
   
   shinyjs::addCssClass(selector = "a[data-value='PLOTS']", class = "inactiveLink")
   shinyjs::addCssClass(selector = "a[data-value='DATA']", class = "inactiveLink")
+  shinyjs::hide(id="selected_data_info")
   
   output$info_banner_text <- renderText({
      "Choose a dataset from the table"
@@ -256,7 +188,6 @@ server <- function(input, output, session ) {
   output$info_banner <- renderUI({
     if(input$sidebar_menu == "BROWSE"){
       if(is.null(input$summary_table_all_rows_selected)){
-        #textOutput(outputId = "info_banner_text")
         bannertags <- tagList(
           p("Choose dataset from table", class = "banner-text"),
         )
@@ -361,16 +292,19 @@ server <- function(input, output, session ) {
         rv$long_data_tib <- long_data_tibble
         
         updateSelectInput(
-          inputId = "selected_condition",
-          label = "select condition",
-          choices = names(rv$metadata$meta_summary)
+          inputId = "selected_set", 
+          label = "select set",
+          choices = names(rv$measures_of_interest)
         )
+        
         shinyjs::removeCssClass(selector = "a[data-value='PLOTS']", class = "inactiveLink")
         shinyjs::removeCssClass(selector = "a[data-value='DATA']", class = "inactiveLink")
+        shinyjs::show(id="selected_data_info")
+        
       } else {
-       
         shinyjs::addCssClass(selector = "a[data-value='PLOTS']", class = "inactiveLink")
         shinyjs::addCssClass(selector = "a[data-value='DATA']", class = "inactiveLink")
+        shinyjs::hide(id="selected_data_info")
      }
   })
 
@@ -427,59 +361,76 @@ server <- function(input, output, session ) {
     data_summary_table$citation[row_number]  
   })
   
+## Data tab ----
+## 
+### entire dataset ----
+### 
+  output$entire_dataset <- renderUI({
+    if(!isTruthy(rv$dataset)) {
+      welltags <- p("Load a dataset from the browse tab to see information here.")
+    } else {
+      welltags <- tagList(
+        DT::dataTableOutput("data_table"),
+        downloadButton("download_csv", "download csv")
+      )
+    }   
+    wellPanel(class = "my_info_panel", welltags)
+  })
     
-## info tab ----    
-  output$dataset_name <- renderText({
-    chosen_dataset()
+  output$data_table <- DT::renderDataTable({
+    req(rv$dataset)
+    #dt_setup(rv$dataset, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
+    
+    DT::datatable(
+      rv$dataset,
+      options = list(
+        dom = "ftlip", 
+        scrollX = TRUE, 
+        autoWidth = FALSE,
+        pageLength = 15
+      )
+    ) %>% 
+      DT::formatStyle(0, target = 'row', `font-size` = '90%', lineHeight = '80%') %>%
+      DT::formatRound(columns = 1:ncol(rv$dataset), digits = 2)
   })
   
-  output$dataset_info <- renderText({
-    
-    if(chosen_dataset() == "choose dataset") {
-      "Choose a dataset"
-    } else {
-      #"populate this with an info file"
-      rv$info$summary_info
+  output$download_csv <- downloadHandler(
+    filename = function() {
+      paste(chosen_dataset(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(x = rv$dataset, file)
     }
-    
-  })
-
-## metadata tab ----
+  )
+## 
+## 
 ### dataset summary ----  
 ### 
   output$all_dataset_summary <- renderUI({
     if(!isTruthy(rv$dataset)) {
-      welltags <- p("Load a dataset to see summary information.")
+      welltags <- p("Load a dataset fromthe browse tab to see summary information.")
     } else {
       welltags <- tagList(
-        textOutput("meta_info1"),
-        textOutput("meta_info2"),
-        h6("Number of categories in each condition:"),
-        tableOutput("meta_info3"),
-        checkboxInput("show_meta_summary", "show more information on conditions"),
-        conditionalPanel(
-          condition = "input.show_meta_summary == 1",
-          fluidRow(
-            column(
-              width = 4,
-              selectInput(
-                "selected_condition",
-                "select condition",
-                choices = ""
-              ),
-            ),
-            column(width = 8, tableOutput("meta_summary"))
+        fluidRow(
+          column(width = 6, 
+            p(class="section_header", "Data summary"),
+            br(),
+            textOutput("meta_info1"),
+            br(),
+            textOutput("meta_info2")
+          ),
+          column(width=6, 
+            p(class="section_header", "Number of categories in each condition"),
+            DT::dataTableOutput("meta_info3")
           )
         ),
-        checkboxInput("show_meta", "show all metadata"),
-        conditionalPanel(
-          condition = "input.show_meta == 1",
-          DT::dataTableOutput("meta_table")
-        )
+        br(),
+        p(class="section_header", "All metadata"),
+        DT::dataTableOutput("meta_table")
       )
     }
     wellPanel(
-      class = "info_panel",
+      class = "my_info_panel",
       welltags
     )
   })
@@ -510,32 +461,48 @@ server <- function(input, output, session ) {
       "."
     )
   })
-  
-  output$meta_info3 <- renderTable({
+
+  output$meta_info3 <- DT::renderDataTable({
     req(rv$metadata)
-    tibble::enframe(sapply(rv$metadata$meta_summary, nrow))
-  }, colnames = FALSE)
-  
-#### info in conditional panels ----
-  output$meta_table <- DT::renderDataTable({
-    req(rv$metadata)
-    dt_setup(rv$metadata$meta_all, n_rows = 20)
+    table_data <- tibble::enframe(sapply(rv$metadata$meta_summary, nrow))
+    DT::datatable(
+      table_data,
+      rownames = FALSE,
+      options = list(
+        dom = "t"
+      )
+    ) %>% 
+      DT::formatStyle(0, target = 'row', `font-size` = '90%', lineHeight = '80%')
   })
   
-  output$meta_summary <- renderTable({
-    req(input$selected_condition)
-    req(rv$metadata$meta_summary)
-    rv$metadata$meta_summary[[input$selected_condition]]
+  output$meta_table <- DT::renderDataTable({
+    req(rv$metadata)
+    DT::datatable(
+      rv$metadata$meta_all,
+      rownames = FALSE,
+      options = list(
+        dom = "tip",
+        pageLength = 12
+      )
+    ) %>% 
+      DT::formatStyle(0, target = 'row', `font-size` = '90%', lineHeight = '80%')
+    #dt_setup(rv$metadata$meta_all, n_rows = 20)
   })
   
 ### Sets of interest ----  
 ###
   output$all_set_info <- renderUI({
     if(!isTruthy(rv$dataset)) {
-      welltags <- p("These can be sets of genes/proteins etc. of special interest that can be highlighted on plots.")
+      welltags <- tagList(
+        br(),
+        p("Load a dataset from the browse tab.")
+      )
     } else {
       if(!isTruthy(rv$measures_of_interest)){
-        welltags <- p("No sets of interest available, add some using the filter options.")
+        welltags <- tagList(
+          br(),
+          p("No sets of interest have been loaded for this dataset, add some using the filter options.")
+        )
       } else {
         welltags <- tagList(
           textOutput("set_info1"),
@@ -561,7 +528,9 @@ server <- function(input, output, session ) {
     }
     wellPanel(
       id = "sets_of_interest_panel", 
-      class = "info_panel",
+      class = "my_info_panel",
+      p(class="section_header", "Sets of Interest"),
+      p("These can be sets of genes/proteins etc. of special interest that can be highlighted on plots."),
       welltags
     )
   })
@@ -594,32 +563,6 @@ server <- function(input, output, session ) {
       wellPanel(mod_name_filter_ui("name_filter"))
     }
   })
-  
-  ## data tab ----
-  output$data_table <- DT::renderDataTable({
-    req(rv$dataset)
-    #dt_setup(rv$dataset, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
-    
-    DT::datatable(
-      rv$dataset,
-      options = list(
-        dom = "ftlip", 
-        scrollX = TRUE, 
-        autoWidth = FALSE
-      )
-    ) %>% 
-      DT::formatStyle(0, target = 'row', `font-size` = '90%', lineHeight = '80%') %>%
-      DT::formatRound(columns = 1:ncol(rv$dataset), digits = 2)
-  })
-  
-  output$download_csv <- downloadHandler(
-    filename = function() {
-      paste(chosen_dataset(), ".csv", sep = "")
-    },
-    content = function(file) {
-      write.csv(x = rv$dataset, file)
-    }
-  )
 
 ## plot tab ---- 
 ### histogram module ----    
