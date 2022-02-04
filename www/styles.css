@@ -90,8 +90,13 @@ tabs>li.active>a {
 }
 
 #main_title {
-  padding: 0px 10px;
+  font-size: 60px;
+  text-align: center;
+  padding: 20px 10px 50px 2px;
+  margin: 0px;
+  font-weight: 550;
 }
+
 #main_logo {
   display: block;
   margin-left: auto;
@@ -192,13 +197,6 @@ body {
   border-radius: 8px;
 }
 
-#main_title {
-  font-size: 50px;
-  text-align: center;
-  padding: 20px;
-  margin: 0px
-}
-
 .inactiveLink {
    cursor: not-allowed;
 }
@@ -223,10 +221,24 @@ body {
 #load_dataset_btn {
   margin: 0 auto;
   display: block;
+  font-size: 30px;
+  padding: 10px 20px;
 }
 
 #loaded_ds_msg {
   font-size: 16px;
+  padding: 10px 0px 0px;
+}
+
+#choose_ds_msg {
+ padding: 10px;
+ margin: 0px;
+ font-size: 36px;
+ font-weight: 600;
+}
+
+#banner_filler {
+  padding: 10px;
 }
 
 .section_header {
@@ -235,13 +247,21 @@ body {
 }
   
 .my_info_panel {
-  margin: 30px 30px 0px;
+  margin: 15px 30px 0px;
   padding: 30px;
 }
 
 #selected_data_info { 
   margin-top: 10px;
 }
+
+#selected_dataset_title {
+  font-size: 32px;
+  font-weight: bold;
+  padding: 0px 0px 10px;
+}
+
+
 
 
 

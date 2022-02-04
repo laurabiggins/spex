@@ -45,8 +45,6 @@ ui <- tagList(
       HTML('<link rel="icon" type="image/jpg" href = "images/spex_logo_rotated.png"/>'),
       #tags$script(src = "script.js"),
       tags$script(
-#         "var exploreText = document.getElementById('explore');
-#         exploreText.style.backgroundColor = 'red';"
        "$(document).on('shiny:connected', function() {
          Shiny.setInputValue('pre_chosen_dataset', document.location.hash, {priority: 'event'});
        })"
@@ -80,9 +78,6 @@ ui <- tagList(
       ),
       dashboardBody(
         uiOutput(outputId = "info_banner"),
-        #wellPanel(id = "banner-panel", 
-         #         textOutput(outputId="info_banner"),
-        #          ),
         tabItems(
           ## browse tab ----
           tabItem(tabName = "BROWSE",
@@ -90,7 +85,7 @@ ui <- tagList(
               DT::dataTableOutput("summary_table_all")
             ),
             wellPanel(id="selected_data_info", class = "my_info_panel",
-              h2(textOutput(outputId = "selected_dataset_title")),
+              textOutput(outputId = "selected_dataset_title"),
               textOutput(outputId = "selected_dataset_citation"),
               br(),
               textOutput(outputId = "selected_dataset_summaryinfo")
@@ -164,17 +159,12 @@ ui <- tagList(
   )
 )
 
-
 # server ----
 server <- function(input, output, session ) {
   
   shinyjs::addCssClass(selector = "a[data-value='PLOTS']", class = "inactiveLink")
   shinyjs::addCssClass(selector = "a[data-value='DATA']", class = "inactiveLink")
   shinyjs::hide(id="selected_data_info")
-  
-  output$info_banner_text <- renderText({
-     "Choose a dataset from the table"
-  })
   
   currently_loaded_dataset <- reactive({
     if(chosen_dataset() == "choose dataset"){
@@ -189,13 +179,15 @@ server <- function(input, output, session ) {
     if(input$sidebar_menu == "BROWSE"){
       if(is.null(input$summary_table_all_rows_selected)){
         bannertags <- tagList(
-          p("Choose dataset from table", class = "banner-text"),
+          p(id = "choose_ds_msg", "Choose dataset from table", class = "banner-text"),
         )
       } else if(chosen_dataset() != selected_dataset_name()) {
         bannertags <- tagList(
             actionButton(inputId = "load_dataset_btn", label = "load selected dataset", class = "button")
         )
-      } else bannertags <- NULL
+      } else if(chosen_dataset() == selected_dataset_name()) {
+        bannertags <- tagList(p(id="banner_filler", "", class = "banner-text")) # filler so screen doesn't jump around
+      }
     } else bannertags <- NULL
  
     tagList(
@@ -206,17 +198,7 @@ server <- function(input, output, session ) {
   
   
 ## reactive values ----  
-  data_loaded <- reactiveVal(FALSE)
-  
-  shinyjs::disable()
-  #chosen_dataset <- eventReactive(input$load_data, input$choose_dataset)
-
-  selected_dataset_name <- reactive({
-    req(input$summary_table_all_rows_selected)
-    row_number <- as.numeric(input$summary_table_all_rows_selected)
-    data_summary_table$dataset_name[row_number] 
-  })
-  
+ # data_loaded <- reactiveVal(FALSE)
   chosen_dataset <- reactiveVal("choose dataset")
   
   rv <- reactiveValues(
@@ -226,11 +208,23 @@ server <- function(input, output, session ) {
     measures_of_interest = NULL, # sets of ids of interest
     metadata = NULL # list of accompanying metadata
   )
-
-  # observeEvent(input$load_data, {
-  #   chosen_dataset(input$choose_dataset)
-  # })
-      
+  
+  # dataset name selected from the table - it doesn't have to be loaded to view 
+  # summary text info
+  selected_dataset_name <- reactive({
+    if(is.null(input$summary_table_all_rows_selected)) return (NULL)
+    row_number <- as.numeric(input$summary_table_all_rows_selected)
+    data_summary_table$dataset_name[row_number] 
+  })
+  
+  observeEvent(selected_dataset_name(), ignoreNULL = FALSE, {
+    if(is.null(selected_dataset_name())){
+      shinyjs::hide(id="selected_data_info")
+    } else {
+      shinyjs::show(id="selected_data_info")
+    }
+  })
+  
   observeEvent(input$load_dataset_btn, {
     chosen_dataset(selected_dataset_name())
   })
@@ -250,74 +244,61 @@ server <- function(input, output, session ) {
   })
   
   ## load data ----     
-  #observeEvent(input$load_data, {
-   observeEvent(chosen_dataset(), { 
-      
-      if(chosen_dataset() != "choose dataset") {
-        
-        # need checks here that the locations exist
-        data_folder <- paste0(data_location, chosen_dataset(), "/")
-        
-        dataset  <- readRDS(paste0(data_folder, "dataset.rds"))
-                                          
-        metadata_processed  <- readRDS(paste0(data_folder, "metadata.rds"))
-        
-        if(file.exists(paste0(data_folder, "of_interest.rds"))){
-          of_interest  <- readRDS(paste0(data_folder, "of_interest.rds"))
-        } else of_interest <- NULL
-        
-        if(file.exists(paste0(data_folder, "info.rds"))){
-          info  <- readRDS(paste0(data_folder, "info.rds"))
-        } else info <- list(summary_info = "populate with info file")
-        
-        
-        rv$dataset <- dataset
-        rv$metadata <- metadata_processed
-        rv$measure_names <- rownames(dataset)
-        rv$measures_of_interest <- of_interest
-        rv$info <- info
-        
-        meta_factors <- metadata_processed$meta_all %>%
-          dplyr::mutate_if(is.character, factor) %>%
-          dplyr::mutate_if(is.double, factor) %>%
-          dplyr::mutate_if(is.integer, factor)
-        
-        tib <- tibble::as_tibble(dataset, rownames = "row_attribute")
-        
-        long_data_tibble <- tib %>% 
-          tidyr::pivot_longer(cols = -row_attribute, names_to = sample_names) %>%
-          tidyr::drop_na() %>%
-          dplyr::left_join(meta_factors)
-        
-        rv$long_data_tib <- long_data_tibble
-        
-        updateSelectInput(
-          inputId = "selected_set", 
-          label = "select set",
-          choices = names(rv$measures_of_interest)
-        )
-        
-        shinyjs::removeCssClass(selector = "a[data-value='PLOTS']", class = "inactiveLink")
-        shinyjs::removeCssClass(selector = "a[data-value='DATA']", class = "inactiveLink")
-        shinyjs::show(id="selected_data_info")
-        
-      } else {
-        shinyjs::addCssClass(selector = "a[data-value='PLOTS']", class = "inactiveLink")
-        shinyjs::addCssClass(selector = "a[data-value='DATA']", class = "inactiveLink")
-        shinyjs::hide(id="selected_data_info")
-     }
-  })
-
-  output$currently_loaded_ds <- renderText({
+  observeEvent(chosen_dataset(), { 
     
-    if(chosen_dataset() == "choose dataset") {
-      "No dataset currently loaded"
+    if(chosen_dataset() != "choose dataset") {
+      
+      # need checks here that the locations exist
+      data_folder <- paste0(data_location, chosen_dataset(), "/")
+      
+      dataset  <- readRDS(paste0(data_folder, "dataset.rds"))
+                                        
+      metadata_processed  <- readRDS(paste0(data_folder, "metadata.rds"))
+      
+      if(file.exists(paste0(data_folder, "of_interest.rds"))){
+        of_interest  <- readRDS(paste0(data_folder, "of_interest.rds"))
+      } else of_interest <- NULL
+      
+      if(file.exists(paste0(data_folder, "info.rds"))){
+        info  <- readRDS(paste0(data_folder, "info.rds"))
+      } else info <- list(summary_info = "populate with info file")
+      
+      rv$dataset <- dataset
+      rv$metadata <- metadata_processed
+      rv$measure_names <- rownames(dataset)
+      rv$measures_of_interest <- of_interest
+      rv$info <- info
+      
+      meta_factors <- metadata_processed$meta_all %>%
+        dplyr::mutate_if(is.character, factor) %>%
+        dplyr::mutate_if(is.double, factor) %>%
+        dplyr::mutate_if(is.integer, factor)
+      
+      tib <- tibble::as_tibble(dataset, rownames = "row_attribute")
+      
+      long_data_tibble <- tib %>% 
+        tidyr::pivot_longer(cols = -row_attribute, names_to = sample_names) %>%
+        tidyr::drop_na() %>%
+        dplyr::left_join(meta_factors)
+      
+      rv$long_data_tib <- long_data_tibble
+      
+      updateSelectInput(
+        inputId = "selected_set", 
+        label = "Select set to see details",
+        choices = names(rv$measures_of_interest)
+      )
+      
+      shinyjs::removeCssClass(selector = "a[data-value='PLOTS']", class = "inactiveLink")
+      shinyjs::removeCssClass(selector = "a[data-value='DATA']", class = "inactiveLink")
+      
     } else {
-      paste0(chosen_dataset(), " is currently loaded.")
-    }
+      shinyjs::addCssClass(selector = "a[data-value='PLOTS']", class = "inactiveLink")
+      shinyjs::addCssClass(selector = "a[data-value='DATA']", class = "inactiveLink")
+   }
   })
 
-  ## browse tab ----
+  ## Browse tab ----
   output$summary_table_all <- DT::renderDataTable({
     
     DT::datatable(
@@ -341,7 +322,6 @@ server <- function(input, output, session ) {
       )
     )    
   })
-  
   
   output$selected_dataset_title <- renderText({
     req(input$summary_table_all_rows_selected)
@@ -379,19 +359,12 @@ server <- function(input, output, session ) {
     
   output$data_table <- DT::renderDataTable({
     req(rv$dataset)
-    #dt_setup(rv$dataset, n_rows = 20, dom_opt = "ftlip", show_rownames = TRUE)
-    
     DT::datatable(
       rv$dataset,
-      options = list(
-        dom = "ftlip", 
-        scrollX = TRUE, 
-        autoWidth = FALSE,
-        pageLength = 15
-      )
+      options = list(dom = "ftlip", scrollX = TRUE, autoWidth = FALSE, pageLength = 15)
     ) %>% 
       DT::formatStyle(0, target = 'row', `font-size` = '90%', lineHeight = '80%') %>%
-      DT::formatRound(columns = 1:ncol(rv$dataset), digits = 2)
+        DT::formatRound(columns = 1:ncol(rv$dataset), digits = 2)
   })
   
   output$download_csv <- downloadHandler(
@@ -402,13 +375,11 @@ server <- function(input, output, session ) {
       write.csv(x = rv$dataset, file)
     }
   )
-## 
-## 
-### dataset summary ----  
-### 
+ 
+### data summary ----  
   output$all_dataset_summary <- renderUI({
     if(!isTruthy(rv$dataset)) {
-      welltags <- p("Load a dataset fromthe browse tab to see summary information.")
+      welltags <- p("Load a dataset from the browse tab to see summary information.")
     } else {
       welltags <- tagList(
         fluidRow(
@@ -429,14 +400,11 @@ server <- function(input, output, session ) {
         DT::dataTableOutput("meta_table")
       )
     }
-    wellPanel(
-      class = "my_info_panel",
-      welltags
-    )
+    wellPanel(class = "my_info_panel", welltags)
   })
   
 ### 
-#### info that's always present if data is loaded ----   
+#### Data summary text 1 ----   
   output$meta_info1 <- renderText({
     req(rv$metadata)
     req(rv$dataset)
@@ -448,7 +416,8 @@ server <- function(input, output, session ) {
       " measures."
     )
   })
-  
+
+#### Data summary text 2 - conditions ----    
   output$meta_info2 <- renderText({
     req(rv$metadata)
     met <- rv$metadata
@@ -462,6 +431,7 @@ server <- function(input, output, session ) {
     )
   })
 
+#### Table of categories in each condition ----
   output$meta_info3 <- DT::renderDataTable({
     req(rv$metadata)
     table_data <- tibble::enframe(sapply(rv$metadata$meta_summary, nrow))
@@ -474,7 +444,8 @@ server <- function(input, output, session ) {
     ) %>% 
       DT::formatStyle(0, target = 'row', `font-size` = '90%', lineHeight = '80%')
   })
-  
+
+#### All metadata table ----    
   output$meta_table <- DT::renderDataTable({
     req(rv$metadata)
     DT::datatable(
@@ -486,7 +457,6 @@ server <- function(input, output, session ) {
       )
     ) %>% 
       DT::formatStyle(0, target = 'row', `font-size` = '90%', lineHeight = '80%')
-    #dt_setup(rv$metadata$meta_all, n_rows = 20)
   })
   
 ### Sets of interest ----  
@@ -501,27 +471,28 @@ server <- function(input, output, session ) {
       if(!isTruthy(rv$measures_of_interest)){
         welltags <- tagList(
           br(),
-          p("No sets of interest have been loaded for this dataset, add some using the filter options.")
+          p("No sets of interest have been loaded for this dataset, add some using the filter options (soon).")
         )
       } else {
         welltags <- tagList(
           textOutput("set_info1"),
-          h6("Number in each set:"),
-          tableOutput("set_info2"),
-          checkboxInput("show_sets", "show items in set"),
-          conditionalPanel(
-            condition = "input.show_sets == 1",
-            fluidRow(
-              column(
-                width = 4,
-                selectInput(
-                  "selected_set",
-                  "select set",
-                  choices = ""
-                )
-              ),
-              column(width = 8, tableOutput("set_summary"))
-            )
+          br(),
+          fluidRow(
+            column(
+              width = 4,
+              p(class="section_header", "Number in each set"),
+              tableOutput("set_info2"),
+              br(),
+              selectInput(
+                "selected_set",
+                "select set to view in table",
+                choices = names(rv$measures_of_interest)
+              )
+            ),
+            column(width = 8, 
+                   br(),
+                   DT::dataTableOutput("set_summary")
+                   )
           )
         )
       }
@@ -540,7 +511,7 @@ server <- function(input, output, session ) {
     n_sets <- length(rv$measures_of_interest)
     if(n_sets == 1) text <- " set available"
     else text <- " sets available"
-    paste0(n_sets, text, ". To add more, use the filter options.")
+    paste0(n_sets, text, " for this dataset. To add more, use the filter options.")
   })  
   
   output$set_info2 <- renderTable({
@@ -548,11 +519,22 @@ server <- function(input, output, session ) {
     tibble::enframe(sapply(rv$measures_of_interest, nrow))
   }, colnames = FALSE)
 
-#### table in conditional panel  ----   
-  output$set_summary <- renderTable({
+#### set of interest table  ----   
+  output$set_summary <- DT::renderDataTable({
     req(input$selected_set)
     req(rv$measures_of_interest)
-    rv$measures_of_interest[[input$selected_set]]
+    set_data <- rv$measures_of_interest[[input$selected_set]]
+    
+    DT::datatable(
+      set_data,
+      rownames = FALSE,
+      options = list(
+        dom = "tip",
+        pageLength = 12
+      )
+    ) %>% 
+      DT::formatStyle(0, target = 'row', `font-size` = '90%', lineHeight = '80%')
+    
   })
   
   ### filter panel ----
