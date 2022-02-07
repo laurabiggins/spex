@@ -51,7 +51,6 @@ mod_violinplot_server <- function(id, long_data_tib, metadata, sample_name_col, 
   moduleServer(id, function(input, output, session) {
 
     violin_obj <- reactive({
-      validate(need(isTruthy(long_data_tib()), "Please load a dataset reactive")) # this doesn't get called
       req(input$select_condition, long_data_tib())
       violinplot(long_data_tib(), input$select_condition, boxplot = input$add_boxplot)
     })
@@ -60,10 +59,17 @@ mod_violinplot_server <- function(id, long_data_tib, metadata, sample_name_col, 
       violin_obj()
     }) %>% bindCache(input$select_condition, input$add_boxplot, chosen_dataset())
     
-    observeEvent(chosen_dataset(), {
+    #observeEvent(chosen_dataset(), {
+    observeEvent(metadata(), {
+      
+      print("from violinplot chosen dataset, new choices are:")
+      new_choices  <- sort(names(metadata()$meta_summary))
+      print(new_choices)
+      
       updateSelectInput(
         inputId = "select_condition",
-        choices = sort(names(metadata()$meta_summary))
+        #choices = sort(names(metadata()$meta_summary))
+        choices = new_choices
       )
     })
     

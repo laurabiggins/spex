@@ -5,6 +5,7 @@ library(shinydashboard)
 show_browser <- TRUE
 
 # TODO !! data summary and sets of interest do not update !!
+# TODO the metadata should contain the sample name
 
 # for accessing data from spex upload location
 #data_location <- "/data/private/shiny_scripts/spex_upload/inst/extdata/" 
@@ -67,7 +68,8 @@ ui <- tagList(
           menuItem("DATA", tabName = "DATA", icon = NULL,
             menuSubItem(text = "entire dataset", tabName = "all_data"),
             menuSubItem(text = "data summary", tabName = "data_summary"),
-            menuSubItem(text = "sets of interest", tabName = "sets_of_interest")
+            menuSubItem(text = "sets of interest", tabName = "sets_of_interest"),
+            menuSubItem(text = "filter", tabName = "filter")
           ),
           menuItem("PLOTS", tabName = "PLOTS")
         ),
@@ -100,6 +102,9 @@ ui <- tagList(
           ),
           tabItem(tabName = "sets_of_interest",
                   uiOutput(outputId = "all_set_info")
+          ),
+          tabItem(tabName = "filter",
+                  uiOutput(outputId = "filter")
           ),
           ## plot tab ----
           tabItem(tabName = "PLOTS", 
@@ -537,22 +542,39 @@ server <- function(input, output, session ) {
     
   })
   
-  ### filter panel ----
-  output$all_filters <- renderUI({
+  ### filter panel UI ----
+  output$filter <- renderUI({
     if(!isTruthy(rv$dataset)) {
-      wellPanel(p("Load dataset to see filter options.")) 
+      wellPanel(class = "my_info_panel", p("Load dataset to see filter options.")) 
     } else {
-      wellPanel(mod_name_filter_ui("name_filter"))
+      wellPanel(class = "my_info_panel", mod_name_filter_ui("name_filter"))
     }
   })
 
+  ### filter module server ----
+  
+  filter_results <- mod_name_filter_server(
+    "name_filter", 
+    reactive(rv$measure_names), 
+    of_interest = reactive(rv$measures_of_interest),
+    chosen_dataset = chosen_dataset
+  )
+  
+  ### filter results - observeEvent    
+  observeEvent(filter_results(), {
+    
+    rv$measures_of_interest <- filter_results()
+    print("filter results updated")
+    updateSelectInput(inputId = "selected_set", choices = names(rv$measures_of_interest))
+  })
+  
+  
 ## plot tab ---- 
 ### histogram module ----    
   mod_histogramServer(
     "hist",
     data_to_plot = reactive(rv$long_data_tib),
-    meta = reactive(rv$metadata),
-    chosen_dataset
+    variables = reactive(names(rv$metadata$meta_summary))
   )
 
 ### heatmap module ----       
@@ -560,7 +582,7 @@ server <- function(input, output, session ) {
     "heatmap",
     dataset = reactive(rv$dataset),
     metadata = reactive(rv$metadata),
-    sample_name_col = sample_names,
+    sample_name_col = sample_names, # we should make sure that it's always called "sample_name"
     of_interest = reactive(rv$measures_of_interest),
     chosen_dataset = chosen_dataset
   )
@@ -570,7 +592,7 @@ server <- function(input, output, session ) {
     "scatter",
     data_to_plot = reactive(rv$long_data_tib),
     metadata = reactive(rv$metadata),
-    sample_name_col = sample_names,
+    sample_name_col = sample_names, # we should make sure that it's always called "sample_name"
     sets_of_interest = reactive(rv$measures_of_interest),
     chosen_dataset = chosen_dataset
   )
@@ -581,27 +603,9 @@ server <- function(input, output, session ) {
     long_data_tib = reactive(rv$long_data_tib),
     chosen_dataset = chosen_dataset, 
     metadata = reactive(rv$metadata),
-    sample_name_col = sample_names
+    sample_name_col = sample_names # we should make sure that it's always called "sample_name"
   )
 
-## filter tab 
-### filter module ----
-  
-  filter_results <- mod_name_filter_server(
-    "name_filter", 
-    reactive(rv$measure_names), 
-    of_interest = reactive(rv$measures_of_interest),
-    chosen_dataset = chosen_dataset
-  )
-
-### filter results - observeEvent    
-  observeEvent(filter_results(), {
-    
-    rv$measures_of_interest <- filter_results()
-    print("filter results updated")
-    updateSelectInput(inputId = "selected_set", choices = names(rv$measures_of_interest))
-  })
-  
   observeEvent(input$browser, browser())
   
   shinyjs::hide(id = "loading-content", anim = TRUE, animType = "fade")    
