@@ -51,18 +51,7 @@ mod_name_filter_ui <- function(id){
             "dropdown",
             wellPanel(
               h5("1. Search names in dataset"),
-              
-              shinyWidgets::pickerInput(
-                inputId = ns("measure_selector"),
-                label = NULL,
-                choices = c("hello", "select me"),
-                multiple = TRUE,
-                options = shinyWidgets::pickerOptions(
-                  actionsBox = TRUE,
-                  liveSearch = TRUE, 
-                  selectedTextFormat = "count > 10"
-                )
-              ),
+              uiOutput(outputId = ns("dropdown_selection")),
               actionButton(ns("confirm"), "Confirm selection"),
               textOutput(ns("dropdown_msg"))
             )
@@ -90,7 +79,7 @@ mod_name_filter_ui <- function(id){
             )
           ),
           textOutput(ns("add_set_msg")),
-          p("To view set information, go to the metadata tab"),
+          p("To view set information, go to the sets of interest tab"),
           br(),
           br(),
           actionButton(ns("browser"), "browser")
@@ -120,41 +109,20 @@ mod_name_filter_server <- function(id, of_interest, measure_names, chosen_datase
     
     observeEvent(input$browser, browser())
     
-    observeEvent(measure_names(), {
-
-      browser()
-      print("measure names = ")
-      print(head(measure_names()))
-      
-      shinyWidgets::updatePickerInput(
-        session = session,
-        inputId = "name_filter-measure_selector",
-        #choices = measure_names()
-        choices = c("updated choice", "another")
-      )
-      print("choices should have been updated")
-      
-      # updateTextInput(
-      #   inputId = "set_name", 
-      #   label = NULL,
-      #   placeholder = "Updated text"
-      # )
-      # 
-      # updateTextInput(
-      #   inputId = "name_filter-name_filter-set_name",
-      #   label = NULL,
-      #   placeholder = "text2"
-      # )
-      updateTextInput(
-        session,
-        inputId = "name_filter-set_name", 
+    output$dropdown_selection <- renderUI({
+      shinyWidgets::pickerInput(
+        inputId = ns("measure_selector"),
         label = NULL,
-        placeholder = "no 3"
+        choices = measure_names(),
+        multiple = TRUE,
+        options = shinyWidgets::pickerOptions(
+          actionsBox = TRUE,
+          liveSearch = TRUE,
+          selectedTextFormat = "count > 10"
+        )
       )
-      
-      
     })
-      
+    
     sets_of_interest <- reactiveVal()
     
     observeEvent(of_interest(), sets_of_interest(of_interest()))
