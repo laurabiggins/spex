@@ -50,38 +50,25 @@ mod_histogramUI <- function(id){
 #' histogram Server Function
 #'
 #' @noRd 
-mod_histogramServer <- function(id, data_to_plot, chosen_dataset, meta, prefix = "") {
+#mod_histogramServer <- function(id, data_to_plot, chosen_dataset, meta, prefix = "") {
+mod_histogramServer <- function(id, data_to_plot, variables, prefix = "") {
   moduleServer(id, function(input, output, session) {
       
     observeEvent(input$browser, browser())
 
-    observeEvent(chosen_dataset(), {
-
-      new_choices <- sort(names(meta()$meta_summary))
-      
-      updateSelectInput(
-        inputId = "select_variable",
-        choices = new_choices
-      )
+    observeEvent(variables(), {
+      updateSelectInput(inputId = "select_variable", choices = sort(variables()))
     })
     
     density_plot_obj <- reactive({
-      
       req(input$select_variable)
-      
       n_to_plot <- length(unique(data_to_plot()[[input$select_variable]]))
-      
-      # assertthat::assert_that(
-      #   ncol(dataset) == length(unique(data_to_plot()$sample_name)),
-      #   msg = "unexpected number of samples for density plot"
-      # )
       density_plot(data_to_plot(), input$select_variable, n_to_plot)
     })
     
     output$plot <- renderPlot({
       density_plot_obj()
-    }) %>% bindCache(input$select_variable, chosen_dataset())
-
+    }) %>% bindCache(input$select_variable, variables())
         
     output$download_png <- downloadHandler(
       filename = function() {
