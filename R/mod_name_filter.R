@@ -124,33 +124,13 @@ mod_name_filter_server <- function(id, of_interest, measure_names, chosen_datase
     })
     
     sets_of_interest <- reactiveVal()
-    
-    observeEvent(of_interest(), sets_of_interest(of_interest()))
-    
-    rv <- reactiveValues()
-    
     set_msg <- reactiveVal()
+    rv <- reactiveValues()
     
     matched_names <- reactive({
       match_names(rv$entered_names, measure_names())
     })
-    
-    observeEvent(input$confirm, {
-      rv$entered_names <- input$measure_selector
-    })
-    
-    observeEvent(matched_names(), {
-      
-      if(isTruthy(matched_names())){
-        shinyjs::enable("add_names")
-        shinyjs::enable("set_name")
-      } else {
-        shinyjs::disable("add_names")
-        shinyjs::disable("set_name")
-      }
-      
-    })
-    
+
     search_msg <- reactive({
       req(rv$entered_names)
       req(matched_names())
@@ -162,6 +142,20 @@ mod_name_filter_server <- function(id, of_interest, measure_names, chosen_datase
       )
     })
     
+    observeEvent(of_interest(), sets_of_interest(of_interest()))
+    
+    observeEvent(input$confirm, rv$entered_names <- input$measure_selector)
+    
+    observeEvent(matched_names(), {
+      if(isTruthy(matched_names())){
+        shinyjs::enable("add_names")
+        shinyjs::enable("set_name")
+      } else {
+        shinyjs::disable("add_names")
+        shinyjs::disable("set_name")
+      }
+    })
+
     output$dropdown_msg <- renderText({
       paste0(length(matched_names()), " names in set.")
     })
@@ -170,7 +164,6 @@ mod_name_filter_server <- function(id, of_interest, measure_names, chosen_datase
     
     output$add_set_msg <- renderText(set_msg())
 
-        
     observeEvent(input$search_names, {
     
       shinyFeedback::hideFeedback("pasted_names")
@@ -229,7 +222,6 @@ mod_name_filter_server <- function(id, of_interest, measure_names, chosen_datase
         new_sets <- add_set(sets_of_interest(), this_set_name,  matched_names())
         sets_of_interest(new_sets)
         set_msg(paste0("Added ", this_set_name, "."))
-        
       }  
     })
 
