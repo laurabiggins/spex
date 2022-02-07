@@ -51,10 +51,11 @@ mod_name_filter_ui <- function(id){
             "dropdown",
             wellPanel(
               h5("1. Search names in dataset"),
+              
               shinyWidgets::pickerInput(
                 inputId = ns("measure_selector"),
                 label = NULL,
-                choices = "",
+                choices = c("hello", "select me"),
                 multiple = TRUE,
                 options = shinyWidgets::pickerOptions(
                   actionsBox = TRUE,
@@ -108,7 +109,7 @@ mod_name_filter_ui <- function(id){
 }
 
 
-mod_name_filter_server <- function(id, of_interest, measure_names, chosen_dataset){
+mod_name_filter_server <- function(id, of_interest, measure_names, chosen_dataset, session){
   
   moduleServer(id, function(input, output, session) {
     
@@ -121,11 +122,37 @@ mod_name_filter_server <- function(id, of_interest, measure_names, chosen_datase
     
     observeEvent(measure_names(), {
 
+      browser()
+      print("measure names = ")
+      print(head(measure_names()))
+      
       shinyWidgets::updatePickerInput(
         session = session,
-        inputId = "measure_selector",
-        choices = measure_names()
+        inputId = "name_filter-measure_selector",
+        #choices = measure_names()
+        choices = c("updated choice", "another")
       )
+      print("choices should have been updated")
+      
+      # updateTextInput(
+      #   inputId = "set_name", 
+      #   label = NULL,
+      #   placeholder = "Updated text"
+      # )
+      # 
+      # updateTextInput(
+      #   inputId = "name_filter-name_filter-set_name",
+      #   label = NULL,
+      #   placeholder = "text2"
+      # )
+      updateTextInput(
+        session,
+        inputId = "name_filter-set_name", 
+        label = NULL,
+        placeholder = "no 3"
+      )
+      
+      
     })
       
     sets_of_interest <- reactiveVal()
