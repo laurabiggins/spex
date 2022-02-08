@@ -13,7 +13,7 @@
 #  
 #   )
 # }
-mod_histogramUI <- function(id){
+mod_histogramUI <- function(id, plot_height = 400){
   
   ns <- NS(id)
   
@@ -21,7 +21,7 @@ mod_histogramUI <- function(id){
     wellPanel(
       id = ns("panel"), 
       shinycssloaders::withSpinner(
-        plotOutput(ns("plot"), width = "100%", height = 400), 
+        plotOutput(ns("plot"), width = "100%", height = plot_height), 
         image = "images/bioinf1.gif", 
         image.width = 100
       ),
@@ -29,8 +29,10 @@ mod_histogramUI <- function(id){
         inputId = ns("select_variable"),
         label = "select variable",
         choices = ""
-      )  
+      ),
+      checkboxInput(inputId = ns("show_legend"), label = "display legend", value = TRUE)
     ),
+    #actionButton(ns("browser"), "browser"),
     # so that the saved plot is the same size as the plot on the screen
     tags$script(
       "var myWidth = 0;
@@ -63,12 +65,12 @@ mod_histogramServer <- function(id, data_to_plot, variables, prefix = "") {
     density_plot_obj <- reactive({
       req(input$select_variable)
       n_to_plot <- length(unique(data_to_plot()[[input$select_variable]]))
-      density_plot(data_to_plot(), input$select_variable, n_to_plot)
+      density_plot(data_to_plot(), input$select_variable, n_to_plot, input$show_legend)
     })
     
     output$plot <- renderPlot({
       density_plot_obj()
-    }) %>% bindCache(input$select_variable, variables())
+    }) %>% bindCache(input$select_variable, variables(), input$show_legend)
         
     output$download_png <- downloadHandler(
       filename = function() {
@@ -102,13 +104,13 @@ mod_histogramServer <- function(id, data_to_plot, variables, prefix = "") {
   })
 }
 
-density_plot <- function(plotting_data, condition, n_samples){
+density_plot <- function(plotting_data, condition, n_samples, show_legend){
  
   req(condition %in% colnames(plotting_data))
   
   my_colours <- grDevices::colorRampPalette(c("#530c82", "#b9c9c9", "#024f4b"))(n_samples)
   
-  ggplot2::ggplot(plotting_data, ggplot2::aes(x = value, fill = .data[[condition]])) +
+  p <- ggplot2::ggplot(plotting_data, ggplot2::aes(x = value, fill = .data[[condition]])) +
     ggplot2::geom_density(alpha = 0.5, size = 1) +
     #ggplot2::ggtitle("\nDistribution of data values\n") +
     ggplot2::scale_fill_manual(values = my_colours) +
@@ -120,4 +122,7 @@ density_plot <- function(plotting_data, condition, n_samples){
      # title        = ggplot2::element_text(size = 22),
       legend.spacing.x = ggplot2::unit(0.2, 'cm')
     )
+  if(show_legend) p 
+  else p + ggplot2::theme(legend.position="none")
+  
 }
