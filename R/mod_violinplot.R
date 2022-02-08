@@ -46,7 +46,7 @@ mod_violinplot_ui <- function(id){#, meta_sum){
 #' scatterplot Server Function
 #'
 #' @noRd 
-mod_violinplot_server <- function(id, long_data_tib, metadata, sample_name_col, chosen_dataset, prefix = "", session) {
+mod_violinplot_server <- function(id, long_data_tib, metadata, sample_name_col, prefix = "", session) {
   
   moduleServer(id, function(input, output, session) {
 
@@ -57,18 +57,12 @@ mod_violinplot_server <- function(id, long_data_tib, metadata, sample_name_col, 
         
     output$plot <- renderPlot({
       violin_obj()
-    }) %>% bindCache(input$select_condition, input$add_boxplot, chosen_dataset())
+    }) %>% bindCache(input$select_condition, input$add_boxplot)
     
-    #observeEvent(chosen_dataset(), {
     observeEvent(metadata(), {
-      
-      print("from violinplot chosen dataset, new choices are:")
       new_choices  <- sort(names(metadata()$meta_summary))
-      print(new_choices)
-      
       updateSelectInput(
         inputId = "select_condition",
-        #choices = sort(names(metadata()$meta_summary))
         choices = new_choices
       )
     })
