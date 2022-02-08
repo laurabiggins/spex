@@ -120,7 +120,7 @@ tabs>li.active>a {
 }
 
 .content {
-  padding: 0px 0px 0px 10px;
+  padding: 0px 0px 0px 40px;
 }
 
 .container-fluid {
@@ -128,7 +128,7 @@ tabs>li.active>a {
 }
 
 .plotbox {
-  padding: 0px;
+  padding: 3px;
 }
 
 .fa, .fa-minus, .fa-plus {
@@ -136,10 +136,12 @@ tabs>li.active>a {
 }
 
 .box {
-   border: 3px solid;
+/*   border: 3px solid;
    border-color: #ff6600e6;
    border-radius: 3px;
-   background: #1d305f;
+*/   background: #1d305f;
+  border: none;
+  margin: 2px;
 }
 
 .box-body {
@@ -261,7 +263,23 @@ body {
   padding: 0px 0px 10px;
 }
 
+.scatter_panel {
+  padding-bottom: 0px;
+  border: none;
+}
 
+.dropdown_cols, .col-sm-4 {
+  padding: 0px 3px;
+  margin: 0px;
+}
+
+.form-group {
+  margin-bottom: 0px;
+}
+
+.selectize-control {
+  margin-bottom: 0px;
+}
 
 
 
