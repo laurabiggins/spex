@@ -125,6 +125,7 @@ ui <- tagList(
               ),
               box(
                 width = 4,
+                class = "plotbox",
                 title = "violinplot",
                 collapsible = TRUE,
                 mod_violinplot_ui("violinplot")
@@ -601,7 +602,6 @@ server <- function(input, output, session ) {
   mod_violinplot_server(
     "violinplot", 
     long_data_tib = reactive(rv$long_data_tib),
-    chosen_dataset = chosen_dataset, 
     metadata = reactive(rv$metadata),
     sample_name_col = sample_names # we should make sure that it's always called "sample_name"
   )
