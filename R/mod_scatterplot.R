@@ -1,3 +1,10 @@
+## !! This needs sorting for when single samples are compared and they're a different 
+## day for Rostovskaya, but I need to think about how to do it without messing up 
+## the groupings when it's not just single samples.
+## !! also get rid of chosen_dataset argument - it's not needed - see violinplot and 
+## use metadata changes to trigger instead.
+## !! don't show highlight options if there are no sets of interest.
+
 #' scatterplot UI Function
 #'
 #' @description A shiny Module.
@@ -8,7 +15,7 @@
 #'
 #' @importFrom shiny NS tagList 
 # UI ----
-mod_scatterplot_ui <- function(id){
+mod_scatterplot_ui <- function(id, plot_height = 400){
   
   ns <- NS(id)
   
@@ -16,30 +23,30 @@ mod_scatterplot_ui <- function(id){
     wellPanel(
       id = ns("panel"),
       verticalLayout(
-        wellPanel(
+        wellPanel(class = "scatter_panel",
           shinycssloaders::withSpinner(
-            plotOutput(ns("plot"), width = "100%", height = 400), 
+            plotOutput(ns("plot"), width = "100%", height = plot_height), 
             image = "images/bioinf1.gif", 
             image.width = 100, image.height = 40
           )
         ),
-        wellPanel(
+        wellPanel(class = "scatter_panel",
           fluidRow(
-            column(width = 4, 
+            column(width = 4, class = "dropdown_cols",
               selectInput(
                 inputId = ns("select_condition"),
                 label = "select variable",
                 choices = ""
               )
             ),
-            column(width = 4, 
+            column(width = 4, class = "dropdown_cols",
               selectInput(
                 ns("x_axis"), 
                 label = "x axis", 
                 choices = ""
               )
             ),
-            column(width = 4, 
+            column(width = 4, class = "dropdown_cols",
               selectInput(
                 ns("y_axis"), 
                 label = "y axis", 
@@ -47,7 +54,7 @@ mod_scatterplot_ui <- function(id){
               )
             )
           ),  
-          #actionButton(ns("browser"), "browser"),
+          actionButton(ns("browser"), "browser"),
           #downloadButton(ns("download_png"), "png"),
           #downloadButton(ns("download_pdf"), "pdf")
         ),
@@ -128,7 +135,6 @@ mod_scatterplot_server <- function(id, data_to_plot, metadata, sample_name_col, 
     })
 
   ## plotting data reactives ----
-    
     selected_data <- reactive({
       req(data_to_plot())
       select_by_group(
@@ -145,35 +151,6 @@ mod_scatterplot_server <- function(id, data_to_plot, metadata, sample_name_col, 
       scatter(selected_data(), points_to_highlight(), input$x_axis, input$y_axis, label_highlighted())
     })
 
-    # Attempt to see whether the scatter plot could not be re-rendered each time the highlight option
-    # was selected but I don't think there's a way to do it.
-    # plotly proxy function is now available but I don't know whether that allows enought control to highlight specific points
-    # scatter_base_obj <- reactive({
-    #   req(selected_data())
-    #   scatter_black(selected_data(), input$x_axis, input$y_axis)
-    # })
-    # 
-    # scatter_highlight_obj <- reactive({
-    #   req(points_to_highlight())
-    #   scatter_highlight(selected_data(), points_to_highlight(), input$x_axis, input$y_axis) 
-    # })
-    # 
-    # scatter_labelled <- reactive({
-    #   scatter_highlight_obj() + ggplot2::geom_text(
-    #     data = points_to_highlight(),
-    #     ggplot2::aes(x = .data[[input$x_axis]], y = .data[[input$y_axis]], label = row_attribute),
-    #     nudge_x = 1
-    #   )
-    # })
-    # 
-    # output$plot <- renderPlot({
-    #   req(scatter_base_obj())
-    #   if(label_highlighted()) scatter_labelled()
-    #   else if(input$highlight_genes & isTruthy(input$set_to_highlight)) scatter_highlight_obj()
-    #   else scatter_base_obj()
-    # })  
-         
-    
     # output$plot ----
     output$plot <- renderPlot({
       req(scatter_plot_object())
@@ -189,7 +166,6 @@ mod_scatterplot_server <- function(id, data_to_plot, metadata, sample_name_col, 
     )
 
     ## highlight sets ----    
-    
     label_highlighted <- reactiveVal(FALSE)
     
     shinyjs::disable("label_highlights")
@@ -385,6 +361,8 @@ get_set_to_highlight <- function(sets, selected_set){
 select_by_group <- function(tibble_dataset, condition, sample_name_col, x_var, y_var){
 
   selected_data <- dplyr::filter(tibble_dataset, .data[[condition]] %in% c(x_var, y_var))
+  # only keep in the gene name (or protein etc. and the [[condition]])
+  #selected_data <- dplyr::select(selected_data, 1, .data[[condition]])
   n_samples <- dplyr::n_distinct(selected_data[[sample_name_col]])
   
   if(n_samples < 2) { # | length(unique(selected_data[[sample_name_col]])) < 2) {
